@@ -1,4 +1,6 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { redirect } from "next/navigation";
+
+import { createClient } from "@/lib/supabase/server";
 
 export default async function Home({
   params,
@@ -6,12 +8,10 @@ export default async function Home({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations("common");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return (
-    <main className="flex flex-1 items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold">{t("appName")}</h1>
-    </main>
-  );
+  redirect(user ? `/${locale}/associations` : `/${locale}/login`);
 }
