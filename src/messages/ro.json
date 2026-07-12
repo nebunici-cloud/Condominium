@@ -157,6 +157,7 @@
     "createSuccess": "Ocupantul a fost înregistrat.",
     "createError": "Nu am putut înregistra ocupantul.",
     "endOccupancy": "Încheie ocuparea",
+    "endOccupancyConfirm": "Ești sigur? Această ocupare va fi marcată ca încheiată azi, iar istoricul va fi păstrat.",
     "endSuccess": "Ocuparea a fost încheiată.",
     "noOccupancies": "Niciun ocupant înregistrat pentru acest apartament.",
     "present": "prezent"
