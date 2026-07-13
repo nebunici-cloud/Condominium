@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { NewUnitDialog } from "./new-unit-dialog";
 import { ImportUnitsDialog } from "./import-units-dialog";
+import { ImportOwnersDialog } from "./import-owners-dialog";
 
 export default async function BuildingDetailPage({
   params,
@@ -58,6 +59,7 @@ export default async function BuildingDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
+          <ImportOwnersDialog buildingId={building.id} tenantId={building.tenant_id} />
           <ImportUnitsDialog buildingId={building.id} tenantId={building.tenant_id} />
           <NewUnitDialog buildingId={building.id} tenantId={building.tenant_id} />
         </div>
