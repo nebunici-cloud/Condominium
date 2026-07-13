@@ -32,9 +32,23 @@ export default async function AppLayout({
     return <OnboardingForm />;
   }
 
+  const { data: userRoleRows } = await supabase
+    .from("user_roles")
+    .select("roles(role_capabilities(capability_code))")
+    .eq("tenant_id", membership.tenant_id)
+    .eq("user_id", user.id);
+
+  const capabilities = Array.from(
+    new Set(
+      (userRoleRows ?? []).flatMap((userRole) =>
+        (userRole.roles?.[0]?.role_capabilities ?? []).map((rc) => rc.capability_code)
+      )
+    )
+  );
+
   return (
     <div className="flex min-h-full flex-col">
-      <AppNav />
+      <AppNav capabilities={capabilities} />
       <div className="flex-1">{children}</div>
     </div>
   );

@@ -7,19 +7,23 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  { href: "/associations", key: "associations" },
-  { href: "/owners", key: "owners" },
-  { href: "/roles", key: "roles" },
-  { href: "/audit", key: "audit" },
-  { href: "/config", key: "config" },
+  { href: "/associations", key: "associations", requiredCapability: "core.association.view" },
+  { href: "/owners", key: "owners", requiredCapability: "core.owner.view" },
+  { href: "/roles", key: "roles", requiredCapability: "core.role.manage" },
+  { href: "/audit", key: "audit", requiredCapability: "core.audit.view" },
+  { href: "/config", key: "config", requiredCapability: "core.config.manage" },
 ] as const;
 
-export function AppNav() {
+export function AppNav({ capabilities }: { capabilities: string[] }) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+
+  const visibleNavItems = navItems.filter((item) =>
+    capabilities.includes(item.requiredCapability)
+  );
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -35,7 +39,7 @@ export function AppNav() {
     <header className="border-b">
       <div className="flex items-center justify-between gap-4 px-6 py-3">
         <nav className="flex items-center gap-4">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
