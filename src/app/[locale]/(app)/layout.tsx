@@ -34,16 +34,22 @@ export default async function AppLayout({
 
   const { data: userRoleRows } = await supabase
     .from("user_roles")
-    .select("roles(role_capabilities(capability_code))")
+    .select("role_id")
     .eq("tenant_id", membership.tenant_id)
     .eq("user_id", user.id);
 
+  const roleIds = (userRoleRows ?? []).map((userRole) => userRole.role_id);
+
+  const { data: capabilityRows } =
+    roleIds.length > 0
+      ? await supabase
+          .from("role_capabilities")
+          .select("capability_code")
+          .in("role_id", roleIds)
+      : { data: [] };
+
   const capabilities = Array.from(
-    new Set(
-      (userRoleRows ?? []).flatMap((userRole) =>
-        (userRole.roles?.[0]?.role_capabilities ?? []).map((rc) => rc.capability_code)
-      )
-    )
+    new Set((capabilityRows ?? []).map((row) => row.capability_code))
   );
 
   return (
