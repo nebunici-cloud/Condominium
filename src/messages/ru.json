@@ -49,7 +49,11 @@
     "facebookComingSoon": "Facebook (скоро)",
     "signingIn": "Выполняется вход...",
     "callbackError": "Ссылка для входа недействительна или истекла.",
-    "callbackProcessing": "Завершаем вход..."
+    "callbackProcessing": "Завершаем вход...",
+    "devLoginTitle": "Только для тестирования — прямой вход под ролью",
+    "devLoginRolePlaceholder": "Выберите роль",
+    "devLoginButton": "Войти",
+    "devLoginError": "Не удалось выполнить тестовый вход."
   },
   "onboarding": {
     "settingUp": "Настраиваем ваш аккаунт...",

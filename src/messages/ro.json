@@ -49,7 +49,11 @@
     "facebookComingSoon": "Facebook (disponibil în curând)",
     "signingIn": "Se autentifică...",
     "callbackError": "Linkul de autentificare este invalid sau a expirat.",
-    "callbackProcessing": "Se finalizează autentificarea..."
+    "callbackProcessing": "Se finalizează autentificarea...",
+    "devLoginTitle": "Doar pentru testare — autentificare directă cu un rol",
+    "devLoginRolePlaceholder": "Selectează un rol",
+    "devLoginButton": "Autentificare",
+    "devLoginError": "Nu am putut face autentificarea de test."
   },
   "onboarding": {
     "settingUp": "Îți pregătim contul...",
