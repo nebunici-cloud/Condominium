@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { UserPlusIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -50,6 +51,7 @@ export function InviteUserDialog({
 }) {
   const t = useTranslations("roles");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -61,14 +63,26 @@ export function InviteUserDialog({
   async function onSubmit(values: z.infer<typeof schema>) {
     setSubmitting(true);
     const result = await inviteUser({ tenantId, ...values });
-    setSubmitting(false);
 
     if (result.error) {
+      setSubmitting(false);
       toast.error(t("inviteError"));
       return;
     }
 
-    toast.success(t("inviteSuccess"));
+    // Recording the invite only decides which role they'll get -- it
+    // doesn't notify anyone. Send the same magic-link email the login
+    // page sends, so the invite actually reaches their inbox.
+    const supabase = createClient();
+    const { error: emailError } = await supabase.auth.signInWithOtp({
+      email: values.email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/${locale}/auth/callback`,
+      },
+    });
+    setSubmitting(false);
+
+    toast.success(emailError ? t("inviteSuccessNoEmail") : t("inviteSuccess"));
     form.reset({ email: "", roleId: "" });
     setOpen(false);
   }

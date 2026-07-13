@@ -250,6 +250,7 @@
     "inviteRolePlaceholder": "Selectează un rol",
     "inviting": "Se invită...",
     "inviteSuccess": "Invitația a fost trimisă. Va fi activată automat când persoana se autentifică prima dată cu acest email.",
+    "inviteSuccessNoEmail": "Invitația a fost înregistrată, dar nu am putut trimite email-ul de notificare. Trimite-i persoanei direct linkul de autentificare — rolul va fi activat automat când se autentifică cu acest email.",
     "inviteError": "Nu am putut trimite invitația.",
     "revoke": "Anulează invitația",
     "revokeConfirm": "Sigur anulezi această invitație?",
