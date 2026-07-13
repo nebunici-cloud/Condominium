@@ -157,6 +157,8 @@
     "updateSuccess": "Proprietarul a fost actualizat.",
     "updateError": "Nu am putut actualiza proprietarul.",
     "noOwners": "Niciun proprietar înregistrat încă.",
+    "searchPlaceholder": "Caută după nume, email sau telefon",
+    "noResults": "Niciun proprietar nu corespunde căutării.",
     "linkToUnit": "Asociază la apartament",
     "viewDetails": "Vezi detalii",
     "importTitle": "Import proprietari din Excel",
@@ -239,7 +241,10 @@
     "before": "Înainte",
     "after": "După",
     "noEntries": "Niciun eveniment înregistrat încă.",
-    "viewDetails": "Vezi detalii"
+    "viewDetails": "Vezi detalii",
+    "searchPlaceholder": "Caută după utilizator sau tip entitate",
+    "filterActionAll": "Toate acțiunile",
+    "noResults": "Niciun eveniment nu corespunde filtrelor."
   },
   "config": {
     "title": "Registru de configurare",
