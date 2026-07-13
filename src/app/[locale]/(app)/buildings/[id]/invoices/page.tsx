@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { BackLink } from "@/components/back-link";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 
@@ -37,6 +38,7 @@ export default async function BuildingInvoicesPage({
   const t = await getTranslations("invoices");
   const tUnits = await getTranslations("units");
   const tCommon = await getTranslations("common");
+  const tBuildings = await getTranslations("buildings");
   const supabase = await createClient();
 
   const { data: building } = await supabase
@@ -65,6 +67,8 @@ export default async function BuildingInvoicesPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
+      <BackLink href={`/buildings/${building.id}`} label={tBuildings("title")} />
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>

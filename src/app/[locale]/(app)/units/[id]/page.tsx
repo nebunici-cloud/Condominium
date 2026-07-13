@@ -13,12 +13,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
+import { BackLink } from "@/components/back-link";
 
 import { NewOwnershipDialog } from "./new-ownership-dialog";
 import { NewOccupancyDialog } from "./new-occupancy-dialog";
 import { endOwnership, endOccupancy } from "./actions";
 import { RecordPaymentDialog } from "./record-payment-dialog";
 import { MatchPaymentButton } from "./match-payment-button";
+import { EditUnitDialog } from "./edit-unit-dialog";
 
 export default async function UnitDetailPage({
   params,
@@ -36,13 +38,17 @@ export default async function UnitDetailPage({
 
   const { data: unit } = await supabase
     .from("units")
-    .select("id, tenant_id, unit_number")
+    .select(
+      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, meters, building_id, buildings(name)"
+    )
     .eq("id", id)
     .maybeSingle();
 
   if (!unit) {
     notFound();
   }
+
+  const buildingName = unit.buildings?.[0]?.name ?? t("title");
 
   const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
     await Promise.all([
@@ -80,9 +86,29 @@ export default async function UnitDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">
-        {t("title")} — {unit.unit_number}
-      </h1>
+      <BackLink href={`/buildings/${unit.building_id}`} label={buildingName} />
+
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">
+          {t("title")} — {unit.unit_number}
+        </h1>
+        <EditUnitDialog
+          unitId={unit.id}
+          defaultValues={{
+            unitNumber: unit.unit_number,
+            floor: unit.floor?.toString() ?? "",
+            areaSqm: unit.area_sqm?.toString() ?? "",
+            ownershipSharePercent: unit.ownership_share_percent?.toString() ?? "",
+            residentCount: unit.resident_count?.toString() ?? "",
+            meters: Array.isArray(unit.meters)
+              ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
+                  type: m.type ?? "",
+                  meterId: m.meter_id ?? "",
+                }))
+              : [],
+          }}
+        />
+      </div>
 
       <section className="mb-10">
         <div className="mb-4 flex items-center justify-between">

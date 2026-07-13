@@ -12,8 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/back-link";
 
 import { NewBuildingDialog } from "./new-building-dialog";
+import { EditAssociationDialog } from "./edit-association-dialog";
 
 export default async function AssociationDetailPage({
   params,
@@ -24,11 +26,12 @@ export default async function AssociationDetailPage({
   const t = await getTranslations("buildings");
   const tUnits = await getTranslations("units");
   const tFinance = await getTranslations("financeSetup");
+  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: association } = await supabase
     .from("associations")
-    .select("id, tenant_id, name")
+    .select("id, tenant_id, name, legal_id, address")
     .eq("id", id)
     .maybeSingle();
 
@@ -44,6 +47,8 @@ export default async function AssociationDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
+      <BackLink href="/associations" label={tAssociations("title")} />
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
@@ -52,6 +57,14 @@ export default async function AssociationDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
+          <EditAssociationDialog
+            associationId={association.id}
+            defaultValues={{
+              name: association.name,
+              legalId: association.legal_id ?? "",
+              address: association.address ?? "",
+            }}
+          />
           <Button variant="outline" asChild>
             <Link href={`/associations/${association.id}/finance-setup`}>
               {tFinance("title")}

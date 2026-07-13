@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { BackLink } from "@/components/back-link";
 
 import { NewUnitDialog } from "./new-unit-dialog";
+import { EditBuildingDialog } from "./edit-building-dialog";
 import { ImportUnitsDialog } from "./import-units-dialog";
 import { ImportOwnersDialog } from "./import-owners-dialog";
 import { ImportOpeningBalancesDialog } from "./import-opening-balances-dialog";
@@ -28,11 +30,12 @@ export default async function BuildingDetailPage({
   const { id } = await params;
   const t = await getTranslations("units");
   const tInvoices = await getTranslations("invoices");
+  const tBuildings = await getTranslations("buildings");
   const supabase = await createClient();
 
   const { data: building } = await supabase
     .from("buildings")
-    .select("id, tenant_id, name, association_id")
+    .select("id, tenant_id, name, address, association_id, associations(name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -52,8 +55,12 @@ export default async function BuildingDetailPage({
   );
   const shareSumRounded = Math.round(shareSum * 1000) / 1000;
 
+  const associationName = building.associations?.[0]?.name ?? tBuildings("title");
+
   return (
     <main className="mx-auto max-w-4xl p-8">
+      <BackLink href={`/associations/${building.association_id}`} label={associationName} />
+
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
@@ -62,6 +69,10 @@ export default async function BuildingDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <EditBuildingDialog
+            buildingId={building.id}
+            defaultValues={{ name: building.name, address: building.address ?? "" }}
+          />
           <Button variant="outline" asChild>
             <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
           </Button>

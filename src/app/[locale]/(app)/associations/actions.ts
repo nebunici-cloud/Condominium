@@ -45,3 +45,31 @@ export async function createAssociation(input: z.infer<typeof associationSchema>
   revalidatePath("/", "layout");
   return { error: null };
 }
+
+const updateAssociationSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(1),
+  legalId: z.string().trim().optional(),
+  address: z.string().trim().optional(),
+});
+
+export async function updateAssociation(input: z.infer<typeof updateAssociationSchema>) {
+  const parsed = updateAssociationSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("associations")
+    .update({
+      name: parsed.name,
+      legal_id: parsed.legalId || null,
+      address: parsed.address || null,
+    })
+    .eq("id", parsed.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}

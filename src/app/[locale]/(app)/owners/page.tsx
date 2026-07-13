@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 
 import { NewOwnerDialog } from "./new-owner-dialog";
+import { EditOwnerDialog } from "./edit-owner-dialog";
 
 export default async function OwnersPage() {
   const t = await getTranslations("owners");
@@ -40,6 +41,7 @@ export default async function OwnersPage() {
               <TableHead>{t("fullNameLabel")}</TableHead>
               <TableHead>{t("emailLabel")}</TableHead>
               <TableHead>{t("phoneLabel")}</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -48,6 +50,16 @@ export default async function OwnersPage() {
                 <TableCell className="font-medium">{owner.full_name}</TableCell>
                 <TableCell>{owner.email ?? "—"}</TableCell>
                 <TableCell>{owner.phone ?? "—"}</TableCell>
+                <TableCell>
+                  <EditOwnerDialog
+                    ownerId={owner.id}
+                    defaultValues={{
+                      fullName: owner.full_name,
+                      email: owner.email ?? "",
+                      phone: owner.phone ?? "",
+                    }}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

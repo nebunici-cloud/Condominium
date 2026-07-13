@@ -5,7 +5,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
-import { PlusIcon, XIcon } from "lucide-react";
+import { PencilIcon, PlusIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { createUnit } from "./actions";
+import { updateUnit } from "../../buildings/[id]/actions";
 
 const schema = z.object({
   unitNumber: z.string().trim().min(1),
@@ -41,12 +41,12 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function NewUnitDialog({
-  buildingId,
-  tenantId,
+export function EditUnitDialog({
+  unitId,
+  defaultValues,
 }: {
-  buildingId: string;
-  tenantId: string;
+  unitId: string;
+  defaultValues: FormValues;
 }) {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
@@ -55,23 +55,15 @@ export function NewUnitDialog({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      unitNumber: "",
-      floor: "",
-      areaSqm: "",
-      ownershipSharePercent: "",
-      residentCount: "",
-      meters: [],
-    },
+    defaultValues,
   });
 
   const meterFields = useFieldArray({ control: form.control, name: "meters" });
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
-    const result = await createUnit({
-      buildingId,
-      tenantId,
+    const result = await updateUnit({
+      id: unitId,
       unitNumber: values.unitNumber,
       floor: values.floor ? Number(values.floor) : undefined,
       areaSqm: values.areaSqm ? Number(values.areaSqm) : undefined,
@@ -84,26 +76,31 @@ export function NewUnitDialog({
     setSubmitting(false);
 
     if (result.error) {
-      toast.error(t("createError"));
+      toast.error(t("updateError"));
       return;
     }
 
-    toast.success(t("createSuccess"));
-    form.reset();
+    toast.success(t("updateSuccess"));
     setOpen(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) form.reset(defaultValues);
+      }}
+    >
       <DialogTrigger asChild>
-        <Button>
-          <PlusIcon />
-          {t("newUnit")}
+        <Button variant="outline">
+          <PencilIcon />
+          {tCommon("edit")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("newUnit")}</DialogTitle>
+          <DialogTitle>{t("editUnit")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -213,7 +210,7 @@ export function NewUnitDialog({
 
             <DialogFooter>
               <Button type="submit" disabled={submitting}>
-                {tCommon("create")}
+                {tCommon("save")}
               </Button>
             </DialogFooter>
           </form>

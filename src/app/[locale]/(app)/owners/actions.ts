@@ -38,3 +38,31 @@ export async function createOwner(input: z.infer<typeof ownerSchema>) {
   revalidatePath("/", "layout");
   return { error: null };
 }
+
+const updateOwnerSchema = z.object({
+  id: z.string().uuid(),
+  fullName: z.string().trim().min(1),
+  email: z.string().trim().optional(),
+  phone: z.string().trim().optional(),
+});
+
+export async function updateOwner(input: z.infer<typeof updateOwnerSchema>) {
+  const parsed = updateOwnerSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("owners")
+    .update({
+      full_name: parsed.fullName,
+      email: parsed.email || null,
+      phone: parsed.phone || null,
+    })
+    .eq("id", parsed.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}

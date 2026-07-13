@@ -30,3 +30,29 @@ export async function createBuilding(input: z.infer<typeof buildingSchema>) {
   revalidatePath("/", "layout");
   return { error: null };
 }
+
+const updateBuildingSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(1),
+  address: z.string().trim().optional(),
+});
+
+export async function updateBuilding(input: z.infer<typeof updateBuildingSchema>) {
+  const parsed = updateBuildingSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("buildings")
+    .update({
+      name: parsed.name,
+      address: parsed.address || null,
+    })
+    .eq("id", parsed.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}
