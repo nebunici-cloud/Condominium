@@ -23,6 +23,7 @@ export default async function AssociationDetailPage({
   const { id } = await params;
   const t = await getTranslations("buildings");
   const tUnits = await getTranslations("units");
+  const tFinance = await getTranslations("financeSetup");
   const supabase = await createClient();
 
   const { data: association } = await supabase
@@ -50,7 +51,14 @@ export default async function AssociationDetailPage({
             {t("subtitle", { association: association.name })}
           </p>
         </div>
-        <NewBuildingDialog associationId={association.id} tenantId={association.tenant_id} />
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href={`/associations/${association.id}/finance-setup`}>
+              {tFinance("title")}
+            </Link>
+          </Button>
+          <NewBuildingDialog associationId={association.id} tenantId={association.tenant_id} />
+        </div>
       </div>
 
       {!buildings || buildings.length === 0 ? (
