@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUserCapabilities } from "@/lib/capabilities";
 import { AppNav } from "@/components/app-nav";
 import { OnboardingForm } from "@/components/onboarding-form";
 
@@ -28,29 +29,18 @@ export default async function AppLayout({
     .limit(1)
     .maybeSingle();
 
-  if (!membership) {
-    return <OnboardingForm />;
+  let tenantId = membership?.tenant_id;
+
+  if (!tenantId) {
+    const { data: acceptedTenantId } = await supabase.rpc("accept_pending_invite");
+    if (acceptedTenantId) {
+      tenantId = acceptedTenantId;
+    } else {
+      return <OnboardingForm />;
+    }
   }
 
-  const { data: userRoleRows } = await supabase
-    .from("user_roles")
-    .select("role_id")
-    .eq("tenant_id", membership.tenant_id)
-    .eq("user_id", user.id);
-
-  const roleIds = (userRoleRows ?? []).map((userRole) => userRole.role_id);
-
-  const { data: capabilityRows } =
-    roleIds.length > 0
-      ? await supabase
-          .from("role_capabilities")
-          .select("capability_code")
-          .in("role_id", roleIds)
-      : { data: [] };
-
-  const capabilities = Array.from(
-    new Set((capabilityRows ?? []).map((row) => row.capability_code))
-  );
+  const capabilities = await getUserCapabilities(supabase, tenantId, user.id);
 
   return (
     <div className="flex min-h-full flex-col">

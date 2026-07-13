@@ -32,7 +32,8 @@
     "owners": "Proprietari",
     "audit": "Jurnal de activitate",
     "roles": "Roluri",
-    "config": "Configurare"
+    "config": "Configurare",
+    "settings": "Organizație"
   },
   "auth": {
     "signInTitle": "Autentificare",
@@ -228,7 +229,24 @@
     "board_president": "Președinte de asociație",
     "council_member": "Membru al consiliului",
     "administrator": "Administrator",
-    "accountant": "Contabil"
+    "accountant": "Contabil",
+    "teamTitle": "Echipă",
+    "noMembers": "Niciun membru încă.",
+    "memberLabel": "Membru",
+    "memberRolesLabel": "Roluri",
+    "pendingInvitesTitle": "Invitații în așteptare",
+    "noPendingInvites": "Nicio invitație în așteptare.",
+    "inviteUser": "Invită o persoană",
+    "inviteEmailLabel": "Adresă de email",
+    "inviteEmailPlaceholder": "nume@exemplu.com",
+    "inviteRoleLabel": "Rol",
+    "inviteRolePlaceholder": "Selectează un rol",
+    "inviting": "Se invită...",
+    "inviteSuccess": "Invitația a fost trimisă. Va fi activată automat când persoana se autentifică prima dată cu acest email.",
+    "inviteError": "Nu am putut trimite invitația.",
+    "revoke": "Anulează invitația",
+    "revokeConfirm": "Sigur anulezi această invitație?",
+    "revokeSuccess": "Invitația a fost anulată."
   },
   "audit": {
     "title": "Jurnal de activitate",
@@ -260,6 +278,13 @@
     "activate": "Activează",
     "noEntries": "Nicio valoare de configurare încă pentru această asociație.",
     "expenseCategories": "Categorii de cheltuieli"
+  },
+  "settings": {
+    "title": "Organizație",
+    "subtitle": "Datele organizației tale de pe platformă",
+    "nameLabel": "Denumirea organizației",
+    "updateSuccess": "Organizația a fost actualizată.",
+    "updateError": "Nu am putut actualiza organizația."
   },
   "openingBalances": {
     "title": "Solduri inițiale",

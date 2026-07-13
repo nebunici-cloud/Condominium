@@ -32,7 +32,8 @@
     "owners": "Собственники",
     "audit": "Журнал действий",
     "roles": "Роли",
-    "config": "Настройки"
+    "config": "Настройки",
+    "settings": "Организация"
   },
   "auth": {
     "signInTitle": "Вход в систему",
@@ -228,7 +229,24 @@
     "board_president": "Председатель ассоциации",
     "council_member": "Член совета",
     "administrator": "Администратор",
-    "accountant": "Бухгалтер"
+    "accountant": "Бухгалтер",
+    "teamTitle": "Команда",
+    "noMembers": "Пока нет участников.",
+    "memberLabel": "Участник",
+    "memberRolesLabel": "Роли",
+    "pendingInvitesTitle": "Ожидающие приглашения",
+    "noPendingInvites": "Нет ожидающих приглашений.",
+    "inviteUser": "Пригласить человека",
+    "inviteEmailLabel": "Электронная почта",
+    "inviteEmailPlaceholder": "имя@пример.com",
+    "inviteRoleLabel": "Роль",
+    "inviteRolePlaceholder": "Выберите роль",
+    "inviting": "Приглашаем...",
+    "inviteSuccess": "Приглашение отправлено. Оно активируется автоматически, когда человек впервые войдёт с этой почтой.",
+    "inviteError": "Не удалось отправить приглашение.",
+    "revoke": "Отменить приглашение",
+    "revokeConfirm": "Точно отменить это приглашение?",
+    "revokeSuccess": "Приглашение отменено."
   },
   "audit": {
     "title": "Журнал действий",
@@ -260,6 +278,13 @@
     "activate": "Активировать",
     "noEntries": "Для этой ассоциации пока нет настроек.",
     "expenseCategories": "Категории расходов"
+  },
+  "settings": {
+    "title": "Организация",
+    "subtitle": "Данные вашей организации на платформе",
+    "nameLabel": "Название организации",
+    "updateSuccess": "Организация обновлена.",
+    "updateError": "Не удалось обновить организацию."
   },
   "openingBalances": {
     "title": "Начальные остатки",

@@ -12,6 +12,7 @@ const navItems = [
   { href: "/roles", key: "roles", requiredCapability: "core.role.manage" },
   { href: "/audit", key: "audit", requiredCapability: "core.audit.view" },
   { href: "/config", key: "config", requiredCapability: "core.config.manage" },
+  { href: "/settings", key: "settings", requiredCapability: "core.tenant.manage" },
 ] as const;
 
 export function AppNav({ capabilities }: { capabilities: string[] }) {
