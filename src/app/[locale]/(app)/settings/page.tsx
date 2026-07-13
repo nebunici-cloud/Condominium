@@ -15,13 +15,13 @@ export default async function SettingsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl p-4 sm:p-8">
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <SettingsForm tenantId={tenant.id} defaultValues={{ name: tenant.name }} />
-    </main>
+    </>
   );
 }

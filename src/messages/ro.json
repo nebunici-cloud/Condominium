@@ -33,7 +33,7 @@
     "audit": "Jurnal de activitate",
     "roles": "Roluri",
     "config": "Configurare",
-    "settings": "Organizație"
+    "settings": "Setări"
   },
   "auth": {
     "signInTitle": "Autentificare",
@@ -293,7 +293,10 @@
     "subtitle": "Datele organizației tale de pe platformă",
     "nameLabel": "Denumirea organizației",
     "updateSuccess": "Organizația a fost actualizată.",
-    "updateError": "Nu am putut actualiza organizația."
+    "updateError": "Nu am putut actualiza organizația.",
+    "tabOrganization": "Organizație",
+    "tabTeam": "Roluri și echipă",
+    "tabConfig": "Configurare"
   },
   "openingBalances": {
     "title": "Solduri inițiale",

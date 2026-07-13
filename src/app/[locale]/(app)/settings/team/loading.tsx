@@ -1,5 +1,5 @@
 import { PageSkeleton } from "@/components/page-skeleton";
 
 export default function Loading() {
-  return <PageSkeleton breadcrumbLevels={0} rows={6} />;
+  return <PageSkeleton breadcrumbLevels={0} rows={6} bare />;
 }

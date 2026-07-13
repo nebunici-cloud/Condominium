@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  { href: "/associations", key: "associations", requiredCapability: "core.association.view" },
-  { href: "/owners", key: "owners", requiredCapability: "core.owner.view" },
-  { href: "/roles", key: "roles", requiredCapability: "core.role.manage" },
-  { href: "/audit", key: "audit", requiredCapability: "core.audit.view" },
-  { href: "/config", key: "config", requiredCapability: "core.config.manage" },
-  { href: "/settings", key: "settings", requiredCapability: "core.tenant.manage" },
+  { href: "/associations", key: "associations", requiredCapabilities: ["core.association.view"] },
+  { href: "/owners", key: "owners", requiredCapabilities: ["core.owner.view"] },
+  { href: "/audit", key: "audit", requiredCapabilities: ["core.audit.view"] },
+  {
+    href: "/settings",
+    key: "settings",
+    requiredCapabilities: ["core.tenant.manage", "core.role.manage", "core.config.manage"],
+  },
 ] as const;
 
 export function AppNav({ capabilities }: { capabilities: string[] }) {
@@ -23,7 +25,7 @@ export function AppNav({ capabilities }: { capabilities: string[] }) {
   const router = useRouter();
 
   const visibleNavItems = navItems.filter((item) =>
-    capabilities.includes(item.requiredCapability)
+    item.requiredCapabilities.some((capability) => capabilities.includes(capability))
   );
 
   async function handleSignOut() {

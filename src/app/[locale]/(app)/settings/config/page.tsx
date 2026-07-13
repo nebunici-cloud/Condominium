@@ -48,7 +48,7 @@ export default async function ConfigPage({
     : { data: [] };
 
   return (
-    <main className="mx-auto max-w-4xl p-4 sm:p-8">
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
@@ -63,7 +63,7 @@ export default async function ConfigPage({
               variant={selected?.id === association.id ? "secondary" : "outline"}
               asChild
             >
-              <Link href={`/config?association=${association.id}`}>
+              <Link href={`/settings/config?association=${association.id}`}>
                 {association.name}
               </Link>
             </Button>
@@ -126,6 +126,6 @@ export default async function ConfigPage({
           )}
         </>
       )}
-    </main>
+    </>
   );
 }
