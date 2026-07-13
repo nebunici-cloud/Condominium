@@ -27,6 +27,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { updateUnit } from "../../buildings/[id]/actions";
 
@@ -44,9 +51,11 @@ type FormValues = z.infer<typeof schema>;
 export function EditUnitDialog({
   unitId,
   defaultValues,
+  meterTypeOptions,
 }: {
   unitId: string;
   defaultValues: FormValues;
+  meterTypeOptions: string[];
 }) {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
@@ -177,35 +186,55 @@ export function EditUnitDialog({
             <div className="grid gap-2">
               <Label>{t("metersLabel")}</Label>
               <p className="text-xs text-muted-foreground">{t("metersHint")}</p>
-              {meterFields.fields.map((meterField, index) => (
-                <div key={meterField.id} className="flex items-center gap-2">
-                  <Input
-                    placeholder={t("meterType")}
-                    {...form.register(`meters.${index}.type` as const)}
-                  />
-                  <Input
-                    placeholder={t("meterId")}
-                    {...form.register(`meters.${index}.meterId` as const)}
-                  />
+              {meterTypeOptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t("noMeterTypesConfigured")}</p>
+              ) : (
+                <>
+                  {meterFields.fields.map((meterField, index) => (
+                    <div key={meterField.id} className="flex items-center gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`meters.${index}.type` as const}
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder={t("meterType")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {meterTypeOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <Input
+                        placeholder={t("meterId")}
+                        {...form.register(`meters.${index}.meterId` as const)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => meterFields.remove(index)}
+                      >
+                        <XIcon className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => meterFields.remove(index)}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => meterFields.append({ type: "", meterId: "" })}
                   >
-                    <XIcon className="size-4" />
+                    <PlusIcon />
+                    {t("addMeter")}
                   </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => meterFields.append({ type: "", meterId: "" })}
-              >
-                <PlusIcon />
-                {t("addMeter")}
-              </Button>
+                </>
+              )}
             </div>
 
             <DialogFooter>

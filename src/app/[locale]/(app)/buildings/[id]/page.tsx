@@ -4,6 +4,7 @@ import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { embedOne } from "@/lib/embed";
+import { getMeterTypeOptions } from "@/lib/meter-types";
 import { Link } from "@/i18n/navigation";
 import {
   Table,
@@ -49,6 +50,27 @@ export default async function BuildingDetailPage({
     .eq("building_id", id)
     .order("unit_number", { ascending: true });
 
+  const unitIds = (units ?? []).map((unit) => unit.id);
+
+  const [{ data: currentOwnershipRows }, meterTypeOptions] = await Promise.all([
+    unitIds.length
+      ? supabase
+          .from("ownerships")
+          .select("unit_id, share_percent")
+          .in("unit_id", unitIds)
+          .is("effective_to", null)
+      : Promise.resolve({ data: [] }),
+    getMeterTypeOptions(supabase, building.association_id),
+  ]);
+
+  const shareSumByUnit = new Map<string, number>();
+  for (const row of currentOwnershipRows ?? []) {
+    shareSumByUnit.set(row.unit_id, (shareSumByUnit.get(row.unit_id) ?? 0) + row.share_percent);
+  }
+  const completedUnitsCount = (units ?? []).filter(
+    (unit) => Math.round((shareSumByUnit.get(unit.id) ?? 0) * 1000) / 1000 === 100
+  ).length;
+
   const shareSum = (units ?? []).reduce(
     (sum, unit) => sum + (unit.ownership_share_percent ?? 0),
     0
@@ -73,6 +95,14 @@ export default async function BuildingDetailPage({
           <p className="text-sm text-muted-foreground">
             {t("subtitle", { building: building.name })}
           </p>
+          {units && units.length > 0 && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {tBuildings("unitsCompletedStat", {
+                completed: completedUnitsCount,
+                total: units.length,
+              })}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <EditBuildingDialog
@@ -83,7 +113,11 @@ export default async function BuildingDetailPage({
             <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
           </Button>
           <ImportDataMenu buildingId={building.id} tenantId={building.tenant_id} />
-          <NewUnitDialog buildingId={building.id} tenantId={building.tenant_id} />
+          <NewUnitDialog
+            buildingId={building.id}
+            tenantId={building.tenant_id}
+            meterTypeOptions={meterTypeOptions}
+          />
         </div>
       </div>
 

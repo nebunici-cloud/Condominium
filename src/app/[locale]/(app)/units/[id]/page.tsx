@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { embedOne } from "@/lib/embed";
+import { getMeterTypeOptions } from "@/lib/meter-types";
 import {
   Table,
   TableBody,
@@ -55,6 +56,7 @@ export default async function UnitDetailPage({
   const buildingName = building?.name ?? t("title");
   const associationId = building?.association_id;
   const associationName = embedOne(building?.associations)?.name ?? tAssociations("title");
+  const meterTypeOptions = associationId ? await getMeterTypeOptions(supabase, associationId) : [];
 
   const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
     await Promise.all([
@@ -129,6 +131,7 @@ export default async function UnitDetailPage({
                 }))
               : [],
           }}
+          meterTypeOptions={meterTypeOptions}
         />
       </div>
 

@@ -89,6 +89,7 @@
     "updateError": "Nu am putut actualiza blocul.",
     "noBuildings": "Niciun bloc creat încă în această asociație.",
     "unitsCount": "{count, plural, =0 {niciun apartament} one {# apartament} other {# apartamente}}",
+    "unitsCompletedStat": "{completed} din {total} apartamente au proprietar alocat (cotă 100%)",
     "viewDetails": "Vezi detalii"
   },
   "units": {
@@ -110,6 +111,7 @@
     "meterType": "Tip contor",
     "meterId": "Nr. contor",
     "addMeter": "Adaugă contor",
+    "noMeterTypesConfigured": "Nu există încă niciun tip de taxă pe bază de contor configurat. Definește unul în Configurare financiară pentru a putea adăuga contoare.",
     "createSuccess": "Apartamentul a fost creat.",
     "createError": "Nu am putut crea apartamentul.",
     "editUnit": "Editează apartamentul",
