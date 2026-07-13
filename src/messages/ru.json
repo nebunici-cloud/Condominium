@@ -240,5 +240,30 @@
     "activate": "Активировать",
     "noEntries": "Для этой ассоциации пока нет настроек.",
     "expenseCategories": "Категории расходов"
+  },
+  "openingBalances": {
+    "title": "Начальные остатки",
+    "importTitle": "Импорт начальных остатков",
+    "downloadTemplate": "Скачать шаблон",
+    "importFileLabel": "Файл Excel (.xlsx)",
+    "importParse": "Проверить файл",
+    "importParsing": "Проверка...",
+    "importSummary": "{valid} из {total} строк корректны. {invalid} будут пропущены.",
+    "importConfirm": "Подтвердить импорт ({count})",
+    "importConfirming": "Импортируется...",
+    "importSuccess": "{count} начальных остатков импортировано.",
+    "importError": "Не удалось импортировать файл.",
+    "importNoValidRows": "Нет ни одной корректной строки для импорта.",
+    "importColumnStatus": "Статус",
+    "importColumnRow": "Строка",
+    "importRowOk": "Корректно",
+    "amountLabel": "Сумма (положительная = долг, отрицательная = переплата)",
+    "asOfDateLabel": "По состоянию на",
+    "noteLabel": "Примечание",
+    "errorMissingUnitNumber": "Отсутствует номер квартиры",
+    "errorUnitNotFound": "В этом доме нет квартиры с таким номером",
+    "errorMissingAmount": "Отсутствует сумма",
+    "errorInvalidNumber": "Некорректное числовое значение",
+    "errorInvalidDate": "Некорректная дата"
   }
 }

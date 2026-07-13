@@ -240,5 +240,30 @@
     "activate": "Activează",
     "noEntries": "Nicio valoare de configurare încă pentru această asociație.",
     "expenseCategories": "Categorii de cheltuieli"
+  },
+  "openingBalances": {
+    "title": "Solduri inițiale",
+    "importTitle": "Import solduri inițiale",
+    "downloadTemplate": "Descarcă șablon",
+    "importFileLabel": "Fișier Excel (.xlsx)",
+    "importParse": "Verifică fișierul",
+    "importParsing": "Se verifică...",
+    "importSummary": "{valid} din {total} rânduri sunt valide. {invalid} vor fi omise.",
+    "importConfirm": "Confirmă importul ({count})",
+    "importConfirming": "Se importă...",
+    "importSuccess": "{count} solduri inițiale au fost importate.",
+    "importError": "Nu am putut importa fișierul.",
+    "importNoValidRows": "Niciun rând valid de importat.",
+    "importColumnStatus": "Stare",
+    "importColumnRow": "Rând",
+    "importRowOk": "Valid",
+    "amountLabel": "Sumă (pozitiv = datorie, negativ = credit)",
+    "asOfDateLabel": "Valabil la data",
+    "noteLabel": "Notă",
+    "errorMissingUnitNumber": "Numărul apartamentului lipsește",
+    "errorUnitNotFound": "Niciun apartament cu acest număr în acest bloc",
+    "errorMissingAmount": "Suma lipsește",
+    "errorInvalidNumber": "Valoare numerică invalidă",
+    "errorInvalidDate": "Dată invalidă"
   }
 }

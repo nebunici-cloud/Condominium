@@ -17,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { NewUnitDialog } from "./new-unit-dialog";
 import { ImportUnitsDialog } from "./import-units-dialog";
 import { ImportOwnersDialog } from "./import-owners-dialog";
+import { ImportOpeningBalancesDialog } from "./import-opening-balances-dialog";
 
 export default async function BuildingDetailPage({
   params,
@@ -58,7 +59,8 @@ export default async function BuildingDetailPage({
             {t("subtitle", { building: building.name })}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ImportOpeningBalancesDialog buildingId={building.id} tenantId={building.tenant_id} />
           <ImportOwnersDialog buildingId={building.id} tenantId={building.tenant_id} />
           <ImportUnitsDialog buildingId={building.id} tenantId={building.tenant_id} />
           <NewUnitDialog buildingId={building.id} tenantId={building.tenant_id} />
