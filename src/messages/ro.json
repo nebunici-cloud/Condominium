@@ -43,6 +43,7 @@
     "sendMagicLink": "Trimite link de autentificare",
     "magicLinkSent": "Ți-am trimis un link de autentificare pe email. Verifică-ți căsuța de mesaje.",
     "magicLinkError": "Nu am putut trimite linkul de autentificare. Încearcă din nou.",
+    "magicLinkRateLimited": "S-au trimis prea multe linkuri de autentificare recent. Așteaptă câteva minute și încearcă din nou.",
     "orContinueWith": "sau continuă cu",
     "googleComingSoon": "Google (disponibil în curând)",
     "facebookComingSoon": "Facebook (disponibil în curând)",

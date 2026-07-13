@@ -37,7 +37,12 @@ export default function LoginPage() {
     });
 
     if (error) {
-      toast.error(t("magicLinkError"));
+      const isRateLimited = error.status === 429 || error.code === "over_email_send_rate_limit";
+      if (isRateLimited) {
+        toast.error(t("magicLinkRateLimited"));
+      } else {
+        toast.error(t("magicLinkError"), { description: error.message });
+      }
       setStatus("idle");
       return;
     }
