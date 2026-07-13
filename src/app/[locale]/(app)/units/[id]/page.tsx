@@ -17,6 +17,8 @@ import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button
 import { NewOwnershipDialog } from "./new-ownership-dialog";
 import { NewOccupancyDialog } from "./new-occupancy-dialog";
 import { endOwnership, endOccupancy } from "./actions";
+import { RecordPaymentDialog } from "./record-payment-dialog";
+import { MatchPaymentButton } from "./match-payment-button";
 
 export default async function UnitDetailPage({
   params,
@@ -27,6 +29,8 @@ export default async function UnitDetailPage({
   const t = await getTranslations("units");
   const tOwnerships = await getTranslations("ownerships");
   const tOccupancies = await getTranslations("occupancies");
+  const tPayments = await getTranslations("payments");
+  const tInvoices = await getTranslations("invoices");
   const tCommon = await getTranslations("common");
   const supabase = await createClient();
 
@@ -40,7 +44,7 @@ export default async function UnitDetailPage({
     notFound();
   }
 
-  const [{ data: ownerships }, { data: occupancies }, { data: owners }] =
+  const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
     await Promise.all([
       supabase
         .from("ownerships")
@@ -56,6 +60,17 @@ export default async function UnitDetailPage({
         .from("owners")
         .select("id, full_name")
         .order("full_name", { ascending: true }),
+      supabase
+        .from("payments")
+        .select("id, amount, paid_at, method, reference, matched_invoice_id")
+        .eq("unit_id", id)
+        .order("paid_at", { ascending: false }),
+      supabase
+        .from("invoices")
+        .select("id, billing_period_start, billing_period_end, total_amount, status")
+        .eq("unit_id", id)
+        .in("status", ["issued", "partially_paid"])
+        .order("billing_period_start", { ascending: false }),
     ]);
 
   const currentShareSum = (ownerships ?? [])
@@ -189,6 +204,54 @@ export default async function UnitDetailPage({
                   </TableRow>
                 );
               })}
+            </TableBody>
+          </Table>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-medium">{tPayments("title")}</h2>
+          <RecordPaymentDialog
+            unitId={unit.id}
+            tenantId={unit.tenant_id}
+            outstandingInvoices={outstandingInvoices ?? []}
+          />
+        </div>
+
+        {!payments || payments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tPayments("noPayments")}</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{tPayments("paidAtLabel")}</TableHead>
+                <TableHead>{tPayments("amountLabel")}</TableHead>
+                <TableHead>{tPayments("methodLabel")}</TableHead>
+                <TableHead>{tInvoices("period")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell>{payment.paid_at}</TableCell>
+                  <TableCell className="font-medium">{payment.amount}</TableCell>
+                  <TableCell>{payment.method ?? "—"}</TableCell>
+                  <TableCell>
+                    {payment.matched_invoice_id ? (
+                      <Badge variant="secondary">
+                        {outstandingInvoices?.find((i) => i.id === payment.matched_invoice_id)
+                          ?.billing_period_start ?? tPayments("matchButton")}
+                      </Badge>
+                    ) : (
+                      <MatchPaymentButton
+                        paymentId={payment.id}
+                        outstandingInvoices={outstandingInvoices ?? []}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}

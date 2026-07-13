@@ -18,6 +18,7 @@ import { NewUnitDialog } from "./new-unit-dialog";
 import { ImportUnitsDialog } from "./import-units-dialog";
 import { ImportOwnersDialog } from "./import-owners-dialog";
 import { ImportOpeningBalancesDialog } from "./import-opening-balances-dialog";
+import { ImportPaymentsDialog } from "./import-payments-dialog";
 
 export default async function BuildingDetailPage({
   params,
@@ -53,7 +54,7 @@ export default async function BuildingDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
@@ -64,11 +65,15 @@ export default async function BuildingDetailPage({
           <Button variant="outline" asChild>
             <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
           </Button>
-          <ImportOpeningBalancesDialog buildingId={building.id} tenantId={building.tenant_id} />
-          <ImportOwnersDialog buildingId={building.id} tenantId={building.tenant_id} />
-          <ImportUnitsDialog buildingId={building.id} tenantId={building.tenant_id} />
           <NewUnitDialog buildingId={building.id} tenantId={building.tenant_id} />
         </div>
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        <ImportUnitsDialog buildingId={building.id} tenantId={building.tenant_id} />
+        <ImportOwnersDialog buildingId={building.id} tenantId={building.tenant_id} />
+        <ImportOpeningBalancesDialog buildingId={building.id} tenantId={building.tenant_id} />
+        <ImportPaymentsDialog buildingId={building.id} tenantId={building.tenant_id} />
       </div>
 
       {units && units.length > 0 && (
