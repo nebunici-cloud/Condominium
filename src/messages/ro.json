@@ -23,7 +23,8 @@
     "signOut": "Deconectare",
     "error": "A apărut o eroare",
     "success": "Succes",
-    "required": "Acest câmp este obligatoriu"
+    "required": "Acest câmp este obligatoriu",
+    "importData": "Import date"
   },
   "nav": {
     "dashboard": "Panou principal",

@@ -18,10 +18,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { NewUnitDialog } from "./new-unit-dialog";
 import { EditBuildingDialog } from "./edit-building-dialog";
-import { ImportUnitsDialog } from "./import-units-dialog";
-import { ImportOwnersDialog } from "./import-owners-dialog";
-import { ImportOpeningBalancesDialog } from "./import-opening-balances-dialog";
-import { ImportPaymentsDialog } from "./import-payments-dialog";
+import { ImportDataMenu } from "./import-data-menu";
 
 export default async function BuildingDetailPage({
   params,
@@ -84,15 +81,9 @@ export default async function BuildingDetailPage({
           <Button variant="outline" asChild>
             <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
           </Button>
+          <ImportDataMenu buildingId={building.id} tenantId={building.tenant_id} />
           <NewUnitDialog buildingId={building.id} tenantId={building.tenant_id} />
         </div>
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-2">
-        <ImportUnitsDialog buildingId={building.id} tenantId={building.tenant_id} />
-        <ImportOwnersDialog buildingId={building.id} tenantId={building.tenant_id} />
-        <ImportOpeningBalancesDialog buildingId={building.id} tenantId={building.tenant_id} />
-        <ImportPaymentsDialog buildingId={building.id} tenantId={building.tenant_id} />
       </div>
 
       {units && units.length > 0 && (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { UploadIcon, DownloadIcon } from "lucide-react";
+import { DownloadIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -44,15 +43,18 @@ const errorLabelKeys: Record<ParsedOwnerRow["errors"][number], string> = {
 export function ImportOwnersDialog({
   buildingId,
   tenantId,
+  open,
+  onOpenChange,
 }: {
   buildingId: string;
   tenantId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations("owners");
   const tUnits = useTranslations("units");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<ParsedOwnerRow[] | null>(null);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -89,7 +91,7 @@ export function ImportOwnersDialog({
 
     toast.success(t("importSuccess", { count: result.imported }));
     reset();
-    setOpen(false);
+    onOpenChange(false);
   }
 
   const validCount = rows?.filter((r) => r.errors.length === 0).length ?? 0;
@@ -99,16 +101,10 @@ export function ImportOwnersDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next);
+        onOpenChange(next);
         if (!next) reset();
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <UploadIcon />
-          {t("importTitle")}
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("importTitle")}</DialogTitle>
