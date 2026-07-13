@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BackLink } from "@/components/back-link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 
@@ -38,18 +38,20 @@ export default async function BuildingInvoicesPage({
   const t = await getTranslations("invoices");
   const tUnits = await getTranslations("units");
   const tCommon = await getTranslations("common");
-  const tBuildings = await getTranslations("buildings");
+  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: building } = await supabase
     .from("buildings")
-    .select("id, name, association_id")
+    .select("id, name, association_id, associations(name)")
     .eq("id", id)
     .maybeSingle();
 
   if (!building) {
     notFound();
   }
+
+  const associationName = building.associations?.[0]?.name ?? tAssociations("title");
 
   const [{ data: feeTypes }, { data: invoices }] = await Promise.all([
     supabase
@@ -67,7 +69,14 @@ export default async function BuildingInvoicesPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <BackLink href={`/buildings/${building.id}`} label={tBuildings("title")} />
+      <Breadcrumbs
+        items={[
+          { label: tAssociations("title"), href: "/associations" },
+          { label: associationName, href: `/associations/${building.association_id}` },
+          { label: building.name, href: `/buildings/${building.id}` },
+          { label: t("title") },
+        ]}
+      />
 
       <div className="mb-6 flex items-center justify-between">
         <div>

@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
-import { BackLink } from "@/components/back-link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { NewOwnershipDialog } from "./new-ownership-dialog";
 import { NewOccupancyDialog } from "./new-occupancy-dialog";
@@ -34,12 +34,13 @@ export default async function UnitDetailPage({
   const tPayments = await getTranslations("payments");
   const tInvoices = await getTranslations("invoices");
   const tCommon = await getTranslations("common");
+  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: unit } = await supabase
     .from("units")
     .select(
-      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, meters, building_id, buildings(name)"
+      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, meters, building_id, buildings(name, association_id, associations(name))"
     )
     .eq("id", id)
     .maybeSingle();
@@ -48,7 +49,10 @@ export default async function UnitDetailPage({
     notFound();
   }
 
-  const buildingName = unit.buildings?.[0]?.name ?? t("title");
+  const building = unit.buildings?.[0];
+  const buildingName = building?.name ?? t("title");
+  const associationId = building?.association_id;
+  const associationName = building?.associations?.[0]?.name ?? tAssociations("title");
 
   const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
     await Promise.all([
@@ -86,7 +90,16 @@ export default async function UnitDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <BackLink href={`/buildings/${unit.building_id}`} label={buildingName} />
+      <Breadcrumbs
+        items={[
+          { label: tAssociations("title"), href: "/associations" },
+          ...(associationId
+            ? [{ label: associationName, href: `/associations/${associationId}` }]
+            : []),
+          { label: buildingName, href: `/buildings/${unit.building_id}` },
+          { label: unit.unit_number },
+        ]}
+      />
 
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">

@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { BackLink } from "@/components/back-link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { NewBuildingDialog } from "./new-building-dialog";
 import { EditAssociationDialog } from "./edit-association-dialog";
@@ -48,7 +48,12 @@ export default async function AssociationDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <BackLink href="/associations" label={tAssociations("title")} />
+      <Breadcrumbs
+        items={[
+          { label: tAssociations("title"), href: "/associations" },
+          { label: association.name },
+        ]}
+      />
 
       <div className="mb-6 flex items-center justify-between">
         <div>

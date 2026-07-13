@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BackLink } from "@/components/back-link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { NewUnitDialog } from "./new-unit-dialog";
 import { EditBuildingDialog } from "./edit-building-dialog";
@@ -32,6 +32,7 @@ export default async function BuildingDetailPage({
   const t = await getTranslations("units");
   const tInvoices = await getTranslations("invoices");
   const tBuildings = await getTranslations("buildings");
+  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: building } = await supabase
@@ -60,7 +61,13 @@ export default async function BuildingDetailPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <BackLink href={`/associations/${building.association_id}`} label={associationName} />
+      <Breadcrumbs
+        items={[
+          { label: tAssociations("title"), href: "/associations" },
+          { label: associationName, href: `/associations/${building.association_id}` },
+          { label: building.name },
+        ]}
+      />
 
       <div className="mb-4 flex items-center justify-between">
         <div>

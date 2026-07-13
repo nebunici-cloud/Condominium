@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BackLink } from "@/components/back-link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { AddFeeTypeDialog } from "./add-fee-type-dialog";
 import { ChangeMethodDialog } from "./change-method-dialog";
@@ -31,7 +31,7 @@ export default async function FinanceSetupPage({
 }) {
   const { id } = await params;
   const t = await getTranslations("financeSetup");
-  const tBuildings = await getTranslations("buildings");
+  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: association } = await supabase
@@ -63,7 +63,13 @@ export default async function FinanceSetupPage({
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <BackLink href={`/associations/${association.id}`} label={tBuildings("title")} />
+      <Breadcrumbs
+        items={[
+          { label: tAssociations("title"), href: "/associations" },
+          { label: association.name, href: `/associations/${association.id}` },
+          { label: t("title") },
+        ]}
+      />
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
