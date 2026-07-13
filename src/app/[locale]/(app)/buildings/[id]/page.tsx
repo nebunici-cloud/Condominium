@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
@@ -118,15 +119,16 @@ export default async function BuildingDetailPage({
           </TableHeader>
           <TableBody>
             {units.map((unit) => (
-              <TableRow key={unit.id}>
+              <TableRow key={unit.id} className="relative cursor-pointer">
                 <TableCell className="font-medium">{unit.unit_number}</TableCell>
                 <TableCell>{unit.floor ?? "—"}</TableCell>
                 <TableCell>{unit.area_sqm ?? "—"}</TableCell>
                 <TableCell>{unit.ownership_share_percent ?? "—"}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/units/${unit.id}`}>{t("viewDetails")}</Link>
-                  </Button>
+                  <Link href={`/units/${unit.id}`} className="absolute inset-0">
+                    <span className="sr-only">{t("viewDetails")}</span>
+                  </Link>
+                  <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ))}

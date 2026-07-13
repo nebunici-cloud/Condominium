@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
@@ -10,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 
 import { NewAssociationDialog } from "./new-association-dialog";
 
@@ -50,7 +50,7 @@ export default async function AssociationsPage() {
           </TableHeader>
           <TableBody>
             {associations.map((association) => (
-              <TableRow key={association.id}>
+              <TableRow key={association.id} className="relative cursor-pointer">
                 <TableCell className="font-medium">{association.name}</TableCell>
                 <TableCell>{association.legal_id ?? "—"}</TableCell>
                 <TableCell>
@@ -62,11 +62,13 @@ export default async function AssociationsPage() {
                   {new Date(association.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/associations/${association.id}`}>
-                      {t("viewDetails")}
-                    </Link>
-                  </Button>
+                  <Link
+                    href={`/associations/${association.id}`}
+                    className="absolute inset-0"
+                  >
+                    <span className="sr-only">{t("viewDetails")}</span>
+                  </Link>
+                  <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ))}
