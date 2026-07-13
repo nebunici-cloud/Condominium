@@ -201,7 +201,11 @@
     "shareSumWarning": "Cotele coproprietarilor actuali însumează {sum}%, nu 100%.",
     "shareSumOk": "Cotele coproprietarilor actuali însumează 100%.",
     "noOwnerships": "Niciun proprietar asociat încă acestui apartament.",
-    "effectiveRange": "{from} – {to}"
+    "effectiveRange": "{from} – {to}",
+    "selectExisting": "Alege un proprietar existent",
+    "createNewOwner": "Proprietar nou",
+    "ownerLivesHere": "Locuiește aici",
+    "ownerLivesHereSuccess": "Proprietarul a fost adăugat și ca ocupant al apartamentului."
   },
   "occupancies": {
     "title": "Chiriași / ocupanți",
@@ -217,7 +221,8 @@
     "endOccupancyConfirm": "Ești sigur? Această ocupare va fi marcată ca încheiată azi, iar istoricul va fi păstrat.",
     "endSuccess": "Ocuparea a fost încheiată.",
     "noOccupancies": "Niciun ocupant înregistrat pentru acest apartament.",
-    "present": "prezent"
+    "present": "prezent",
+    "isOwnerBadge": "proprietar"
   },
   "roles": {
     "title": "Roluri și permisiuni",

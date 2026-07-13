@@ -18,6 +18,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { NewOwnershipDialog } from "./new-ownership-dialog";
 import { NewOccupancyDialog } from "./new-occupancy-dialog";
+import { AddOwnerAsOccupantButton } from "./add-owner-as-occupant-button";
 import { endOwnership, endOccupancy } from "./actions";
 import { RecordPaymentDialog } from "./record-payment-dialog";
 import { MatchPaymentButton } from "./match-payment-button";
@@ -59,12 +60,12 @@ export default async function UnitDetailPage({
     await Promise.all([
       supabase
         .from("ownerships")
-        .select("id, share_percent, effective_from, effective_to, owners(full_name)")
+        .select("id, share_percent, effective_from, effective_to, owners(id, full_name)")
         .eq("unit_id", id)
         .order("effective_from", { ascending: false }),
       supabase
         .from("occupancies")
-        .select("id, effective_from, effective_to, occupants(full_name)")
+        .select("id, effective_from, effective_to, occupants(full_name, owner_id)")
         .eq("unit_id", id)
         .order("effective_from", { ascending: false }),
       supabase
@@ -88,6 +89,13 @@ export default async function UnitDetailPage({
     .filter((o) => !o.effective_to)
     .reduce((sum, o) => sum + o.share_percent, 0);
   const currentShareSumRounded = Math.round(currentShareSum * 1000) / 1000;
+
+  const currentOccupantOwnerIds = new Set(
+    (occupancies ?? [])
+      .filter((o) => !o.effective_to)
+      .map((o) => embedOne(o.occupants)?.owner_id)
+      .filter((ownerId): ownerId is string => Boolean(ownerId))
+  );
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
@@ -163,11 +171,11 @@ export default async function UnitDetailPage({
               <TableBody>
                 {ownerships.map((ownership) => {
                   const isCurrent = !ownership.effective_to;
+                  const owner = embedOne(ownership.owners);
+                  const ownerAlreadyLivesHere = owner && currentOccupantOwnerIds.has(owner.id);
                   return (
                     <TableRow key={ownership.id}>
-                      <TableCell className="font-medium">
-                        {embedOne(ownership.owners)?.full_name ?? "—"}
-                      </TableCell>
+                      <TableCell className="font-medium">{owner?.full_name ?? "—"}</TableCell>
                       <TableCell>{ownership.share_percent}%</TableCell>
                       <TableCell>
                         <Badge variant={isCurrent ? "default" : "secondary"}>
@@ -175,18 +183,27 @@ export default async function UnitDetailPage({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {isCurrent && (
-                          <EndEffectiveDatedButton
-                            id={ownership.id}
-                            action={endOwnership}
-                            triggerLabel={tOwnerships("endOwnership")}
-                            confirmTitle={tOwnerships("endOwnership")}
-                            confirmDescription={tOwnerships("endOwnershipConfirm")}
-                            successMessage={tOwnerships("endSuccess")}
-                            cancelLabel={tCommon("cancel")}
-                            confirmLabel={tCommon("confirm")}
-                          />
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {isCurrent && owner && !ownerAlreadyLivesHere && (
+                            <AddOwnerAsOccupantButton
+                              unitId={unit.id}
+                              tenantId={unit.tenant_id}
+                              ownerId={owner.id}
+                            />
+                          )}
+                          {isCurrent && (
+                            <EndEffectiveDatedButton
+                              id={ownership.id}
+                              action={endOwnership}
+                              triggerLabel={tOwnerships("endOwnership")}
+                              confirmTitle={tOwnerships("endOwnership")}
+                              confirmDescription={tOwnerships("endOwnershipConfirm")}
+                              successMessage={tOwnerships("endSuccess")}
+                              cancelLabel={tCommon("cancel")}
+                              confirmLabel={tCommon("confirm")}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -218,10 +235,16 @@ export default async function UnitDetailPage({
               <TableBody>
                 {occupancies.map((occupancy) => {
                   const isCurrent = !occupancy.effective_to;
+                  const occupant = embedOne(occupancy.occupants);
                   return (
                     <TableRow key={occupancy.id}>
                       <TableCell className="font-medium">
-                        {embedOne(occupancy.occupants)?.full_name ?? "—"}
+                        <div className="flex items-center gap-2">
+                          {occupant?.full_name ?? "—"}
+                          {occupant?.owner_id && (
+                            <Badge variant="outline">{tOccupancies("isOwnerBadge")}</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={isCurrent ? "default" : "secondary"}>
