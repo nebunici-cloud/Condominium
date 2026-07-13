@@ -80,7 +80,7 @@ export async function devLoginAsRole(roleCode: string, locale: string, origin: s
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo: `${origin}/${locale}/auth/callback` },
+    options: { redirectTo: `${origin}/${locale}/auth/callback-token` },
   });
 
   if (linkError || !linkData) {
