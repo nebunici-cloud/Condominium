@@ -17,7 +17,15 @@ const navItems = [
   },
 ] as const;
 
-export function AppNav({ capabilities }: { capabilities: string[] }) {
+export function AppNav({
+  capabilities,
+  displayName,
+  roleLabels,
+}: {
+  capabilities: string[];
+  displayName: string;
+  roleLabels: string[];
+}) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
   const locale = useLocale();
@@ -52,7 +60,15 @@ export function AppNav({ capabilities }: { capabilities: string[] }) {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {displayName && (
+            <div className="text-right leading-tight">
+              <p className="text-sm font-medium">{displayName}</p>
+              {roleLabels.length > 0 && (
+                <p className="text-xs text-muted-foreground">{roleLabels.join(", ")}</p>
+              )}
+            </div>
+          )}
           <Button
             variant={locale === "ro" ? "secondary" : "ghost"}
             size="sm"

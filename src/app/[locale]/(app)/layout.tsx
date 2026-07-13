@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserCapabilities } from "@/lib/capabilities";
+import { embedOne } from "@/lib/embed";
 import { AppNav } from "@/components/app-nav";
 import { OnboardingForm } from "@/components/onboarding-form";
 
@@ -42,9 +44,29 @@ export default async function AppLayout({
 
   const capabilities = await getUserCapabilities(supabase, tenantId, user.id);
 
+  const tRoles = await getTranslations("roles");
+  const [{ data: profile }, { data: userRoleRows }] = await Promise.all([
+    supabase.from("profiles").select("full_name, email").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("user_roles")
+      .select("roles(code, name)")
+      .eq("tenant_id", tenantId)
+      .eq("user_id", user.id),
+  ]);
+
+  const displayName = profile?.full_name || profile?.email || user.email || "";
+  const roleLabels = Array.from(
+    new Set(
+      (userRoleRows ?? [])
+        .map((row) => embedOne(row.roles))
+        .filter((role): role is { code: string; name: string } => Boolean(role))
+        .map((role) => (tRoles.has(role.code) ? tRoles(role.code) : role.name))
+    )
+  );
+
   return (
     <div className="flex min-h-full flex-col">
-      <AppNav capabilities={capabilities} />
+      <AppNav capabilities={capabilities} displayName={displayName} roleLabels={roleLabels} />
       <div className="flex-1">{children}</div>
     </div>
   );
