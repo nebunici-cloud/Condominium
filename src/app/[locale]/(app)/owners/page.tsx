@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 
 import { NewOwnerDialog } from "./new-owner-dialog";
 import { OwnersTable } from "./owners-table";
@@ -8,6 +9,8 @@ import { OwnersTable } from "./owners-table";
 export default async function OwnersPage() {
   const t = await getTranslations("owners");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: owners } = await supabase
     .from("owners")
@@ -21,13 +24,13 @@ export default async function OwnersPage() {
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <NewOwnerDialog />
+        {capabilities.includes("core.owner.create") && <NewOwnerDialog />}
       </div>
 
       {!owners || owners.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noOwners")}</p>
       ) : (
-        <OwnersTable owners={owners} />
+        <OwnersTable owners={owners} canEdit={capabilities.includes("core.owner.update")} />
       )}
     </main>
   );

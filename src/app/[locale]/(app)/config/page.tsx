@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,8 @@ export default async function ConfigPage({
   const t = await getTranslations("config");
   const tCommon = await getTranslations("common");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const canManage = (context?.capabilities ?? []).includes("core.config.manage");
 
   const { data: associations } = await supabase
     .from("associations")
@@ -74,11 +77,13 @@ export default async function ConfigPage({
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-lg font-medium">{selected.name}</h2>
-            <NewConfigEntryDialog
-              tenantId={selected.tenant_id}
-              associationId={selected.id}
-              defaultCategory="expense_category"
-            />
+            {canManage && (
+              <NewConfigEntryDialog
+                tenantId={selected.tenant_id}
+                associationId={selected.id}
+                defaultCategory="expense_category"
+              />
+            )}
           </div>
 
           {!entries || entries.length === 0 ? (
@@ -109,7 +114,9 @@ export default async function ConfigPage({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <ToggleActiveButton id={entry.id} isActive={entry.is_active} />
+                        {canManage && (
+                          <ToggleActiveButton id={entry.id} isActive={entry.is_active} />
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

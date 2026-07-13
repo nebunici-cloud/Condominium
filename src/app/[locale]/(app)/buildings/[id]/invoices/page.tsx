@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import { embedOne } from "@/lib/embed";
 import {
   Table,
@@ -41,6 +42,8 @@ export default async function BuildingInvoicesPage({
   const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: building } = await supabase
     .from("buildings")
@@ -86,7 +89,9 @@ export default async function BuildingInvoicesPage({
             {t("subtitle", { building: building.name })}
           </p>
         </div>
-        <GenerateInvoicesDialog buildingId={building.id} feeTypes={feeTypes ?? []} />
+        {capabilities.includes("finance.invoice.generate") && (
+          <GenerateInvoicesDialog buildingId={building.id} feeTypes={feeTypes ?? []} />
+        )}
       </div>
 
       {!invoices || invoices.length === 0 ? (

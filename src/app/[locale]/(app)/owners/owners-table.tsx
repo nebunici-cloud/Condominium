@@ -23,7 +23,7 @@ type Owner = {
   phone: string | null;
 };
 
-export function OwnersTable({ owners }: { owners: Owner[] }) {
+export function OwnersTable({ owners, canEdit }: { owners: Owner[]; canEdit: boolean }) {
   const t = useTranslations("owners");
   const [search, setSearch] = useState("");
 
@@ -69,14 +69,16 @@ export function OwnersTable({ owners }: { owners: Owner[] }) {
                   <TableCell>{owner.email ?? "—"}</TableCell>
                   <TableCell>{owner.phone ?? "—"}</TableCell>
                   <TableCell>
-                    <EditOwnerDialog
-                      ownerId={owner.id}
-                      defaultValues={{
-                        fullName: owner.full_name,
-                        email: owner.email ?? "",
-                        phone: owner.phone ?? "",
-                      }}
-                    />
+                    {canEdit && (
+                      <EditOwnerDialog
+                        ownerId={owner.id}
+                        defaultValues={{
+                          fullName: owner.full_name,
+                          email: owner.email ?? "",
+                          phone: owner.phone ?? "",
+                        }}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

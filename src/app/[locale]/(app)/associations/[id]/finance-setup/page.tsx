@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import {
   Card,
   CardContent,
@@ -33,6 +34,8 @@ export default async function FinanceSetupPage({
   const t = await getTranslations("financeSetup");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: association } = await supabase
     .from("associations")
@@ -89,12 +92,14 @@ export default async function FinanceSetupPage({
                   <CardTitle className="text-base">{suggestion.label}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <EnableSuggestedButton
-                    tenantId={association.tenant_id}
-                    associationId={association.id}
-                    configKey={suggestion.key}
-                    label={suggestion.label}
-                  />
+                  {capabilities.includes("finance.fee_type.create") && (
+                    <EnableSuggestedButton
+                      tenantId={association.tenant_id}
+                      associationId={association.id}
+                      configKey={suggestion.key}
+                      label={suggestion.label}
+                    />
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -105,7 +110,9 @@ export default async function FinanceSetupPage({
       <section className="mb-8">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-medium">{t("feeTypesTitle")}</h2>
-          <AddFeeTypeDialog tenantId={association.tenant_id} associationId={association.id} />
+          {capabilities.includes("finance.fee_type.create") && (
+            <AddFeeTypeDialog tenantId={association.tenant_id} associationId={association.id} />
+          )}
         </div>
 
         {!feeTypes || feeTypes.length === 0 ? (
@@ -126,10 +133,12 @@ export default async function FinanceSetupPage({
                   </CardHeader>
                   <CardContent className="flex items-center gap-2">
                     <Badge variant="outline">{feeType.key}</Badge>
-                    <ChangeMethodDialog
-                      feeTypeId={feeType.id}
-                      currentMethod={activeRule?.method ?? null}
-                    />
+                    {capabilities.includes("finance.allocation_rule.manage") && (
+                      <ChangeMethodDialog
+                        feeTypeId={feeType.id}
+                        currentMethod={activeRule?.method ?? null}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               );

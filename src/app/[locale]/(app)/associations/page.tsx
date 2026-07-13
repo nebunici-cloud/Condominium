@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import { Link } from "@/i18n/navigation";
 import {
   Table,
@@ -19,6 +20,8 @@ export default async function AssociationsPage() {
   const tCommon = await getTranslations("common");
   const tBuildings = await getTranslations("buildings");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: associations } = await supabase
     .from("associations")
@@ -32,7 +35,7 @@ export default async function AssociationsPage() {
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <NewAssociationDialog />
+        {capabilities.includes("core.association.create") && <NewAssociationDialog />}
       </div>
 
       {!associations || associations.length === 0 ? (

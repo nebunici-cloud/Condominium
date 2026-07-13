@@ -48,10 +48,12 @@ export function NewOwnershipDialog({
   unitId,
   tenantId,
   owners,
+  canCreateOwner,
 }: {
   unitId: string;
   tenantId: string;
   owners: { id: string; full_name: string }[];
+  canCreateOwner: boolean;
 }) {
   const t = useTranslations("ownerships");
   const tOwners = useTranslations("owners");
@@ -125,24 +127,26 @@ export function NewOwnershipDialog({
         <DialogHeader>
           <DialogTitle>{t("newOwnership")}</DialogTitle>
         </DialogHeader>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "existing" ? "secondary" : "outline"}
-            onClick={() => setMode("existing")}
-          >
-            {t("selectExisting")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mode === "new" ? "secondary" : "outline"}
-            onClick={() => setMode("new")}
-          >
-            {t("createNewOwner")}
-          </Button>
-        </div>
+        {canCreateOwner && (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "existing" ? "secondary" : "outline"}
+              onClick={() => setMode("existing")}
+            >
+              {t("selectExisting")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "new" ? "secondary" : "outline"}
+              onClick={() => setMode("new")}
+            >
+              {t("createNewOwner")}
+            </Button>
+          </div>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
             {mode === "existing" ? (

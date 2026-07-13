@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import { embedOne } from "@/lib/embed";
 import { getMeterTypeOptions } from "@/lib/meter-types";
 import {
@@ -39,6 +40,8 @@ export default async function UnitDetailPage({
   const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: unit } = await supabase
     .from("units")
@@ -116,33 +119,38 @@ export default async function UnitDetailPage({
         <h1 className="text-2xl font-semibold">
           {t("title")} — {unit.unit_number}
         </h1>
-        <EditUnitDialog
-          unitId={unit.id}
-          defaultValues={{
-            unitNumber: unit.unit_number,
-            floor: unit.floor?.toString() ?? "",
-            areaSqm: unit.area_sqm?.toString() ?? "",
-            ownershipSharePercent: unit.ownership_share_percent?.toString() ?? "",
-            residentCount: unit.resident_count?.toString() ?? "",
-            meters: Array.isArray(unit.meters)
-              ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
-                  type: m.type ?? "",
-                  meterId: m.meter_id ?? "",
-                }))
-              : [],
-          }}
-          meterTypeOptions={meterTypeOptions}
-        />
+        {capabilities.includes("core.unit.update") && (
+          <EditUnitDialog
+            unitId={unit.id}
+            defaultValues={{
+              unitNumber: unit.unit_number,
+              floor: unit.floor?.toString() ?? "",
+              areaSqm: unit.area_sqm?.toString() ?? "",
+              ownershipSharePercent: unit.ownership_share_percent?.toString() ?? "",
+              residentCount: unit.resident_count?.toString() ?? "",
+              meters: Array.isArray(unit.meters)
+                ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
+                    type: m.type ?? "",
+                    meterId: m.meter_id ?? "",
+                  }))
+                : [],
+            }}
+            meterTypeOptions={meterTypeOptions}
+          />
+        )}
       </div>
 
       <section className="mb-10">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium">{tOwnerships("title")}</h2>
-          <NewOwnershipDialog
-            unitId={unit.id}
-            tenantId={unit.tenant_id}
-            owners={owners ?? []}
-          />
+          {capabilities.includes("core.ownership.create") && (
+            <NewOwnershipDialog
+              unitId={unit.id}
+              tenantId={unit.tenant_id}
+              owners={owners ?? []}
+              canCreateOwner={capabilities.includes("core.owner.create")}
+            />
+          )}
         </div>
 
         {ownerships && ownerships.some((o) => !o.effective_to) && (
@@ -187,14 +195,18 @@ export default async function UnitDetailPage({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
-                          {isCurrent && owner && !ownerAlreadyLivesHere && (
-                            <AddOwnerAsOccupantButton
-                              unitId={unit.id}
-                              tenantId={unit.tenant_id}
-                              ownerId={owner.id}
-                            />
-                          )}
-                          {isCurrent && (
+                          {isCurrent &&
+                            owner &&
+                            !ownerAlreadyLivesHere &&
+                            capabilities.includes("core.occupant.create") &&
+                            capabilities.includes("core.occupancy.create") && (
+                              <AddOwnerAsOccupantButton
+                                unitId={unit.id}
+                                tenantId={unit.tenant_id}
+                                ownerId={owner.id}
+                              />
+                            )}
+                          {isCurrent && capabilities.includes("core.ownership.update") && (
                             <EndEffectiveDatedButton
                               id={ownership.id}
                               action={endOwnership}
@@ -220,7 +232,10 @@ export default async function UnitDetailPage({
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium">{tOccupancies("title")}</h2>
-          <NewOccupancyDialog unitId={unit.id} tenantId={unit.tenant_id} />
+          {capabilities.includes("core.occupant.create") &&
+            capabilities.includes("core.occupancy.create") && (
+              <NewOccupancyDialog unitId={unit.id} tenantId={unit.tenant_id} />
+            )}
         </div>
 
         {!occupancies || occupancies.length === 0 ? (
@@ -257,7 +272,7 @@ export default async function UnitDetailPage({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {isCurrent && (
+                        {isCurrent && capabilities.includes("core.occupancy.update") && (
                           <EndEffectiveDatedButton
                             id={occupancy.id}
                             action={endOccupancy}
@@ -282,11 +297,13 @@ export default async function UnitDetailPage({
       <section className="mt-10">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium">{tPayments("title")}</h2>
-          <RecordPaymentDialog
-            unitId={unit.id}
-            tenantId={unit.tenant_id}
-            outstandingInvoices={outstandingInvoices ?? []}
-          />
+          {capabilities.includes("finance.payment.record") && (
+            <RecordPaymentDialog
+              unitId={unit.id}
+              tenantId={unit.tenant_id}
+              outstandingInvoices={outstandingInvoices ?? []}
+            />
+          )}
         </div>
 
         {!payments || payments.length === 0 ? (
@@ -315,10 +332,12 @@ export default async function UnitDetailPage({
                             ?.billing_period_start ?? tPayments("matchButton")}
                         </Badge>
                       ) : (
-                        <MatchPaymentButton
-                          paymentId={payment.id}
-                          outstandingInvoices={outstandingInvoices ?? []}
-                        />
+                        capabilities.includes("finance.payment.record") && (
+                          <MatchPaymentButton
+                            paymentId={payment.id}
+                            outstandingInvoices={outstandingInvoices ?? []}
+                          />
+                        )
                       )}
                     </TableCell>
                   </TableRow>

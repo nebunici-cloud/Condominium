@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import { Link } from "@/i18n/navigation";
 import {
   Table,
@@ -29,6 +30,8 @@ export default async function AssociationDetailPage({
   const tFinance = await getTranslations("financeSetup");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: association } = await supabase
     .from("associations")
@@ -63,20 +66,26 @@ export default async function AssociationDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
-          <EditAssociationDialog
-            associationId={association.id}
-            defaultValues={{
-              name: association.name,
-              legalId: association.legal_id ?? "",
-              address: association.address ?? "",
-            }}
-          />
-          <Button variant="outline" asChild>
-            <Link href={`/associations/${association.id}/finance-setup`}>
-              {tFinance("title")}
-            </Link>
-          </Button>
-          <NewBuildingDialog associationId={association.id} tenantId={association.tenant_id} />
+          {capabilities.includes("core.association.update") && (
+            <EditAssociationDialog
+              associationId={association.id}
+              defaultValues={{
+                name: association.name,
+                legalId: association.legal_id ?? "",
+                address: association.address ?? "",
+              }}
+            />
+          )}
+          {capabilities.includes("finance.fee_type.view") && (
+            <Button variant="outline" asChild>
+              <Link href={`/associations/${association.id}/finance-setup`}>
+                {tFinance("title")}
+              </Link>
+            </Button>
+          )}
+          {capabilities.includes("core.building.create") && (
+            <NewBuildingDialog associationId={association.id} tenantId={association.tenant_id} />
+          )}
         </div>
       </div>
 

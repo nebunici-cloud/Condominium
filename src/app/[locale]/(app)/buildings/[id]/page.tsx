@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentCapabilities } from "@/lib/capabilities";
 import { embedOne } from "@/lib/embed";
 import { getMeterTypeOptions } from "@/lib/meter-types";
 import { Link } from "@/i18n/navigation";
@@ -33,6 +34,8 @@ export default async function BuildingDetailPage({
   const tBuildings = await getTranslations("buildings");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
+  const context = await getCurrentCapabilities(supabase);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: building } = await supabase
     .from("buildings")
@@ -105,19 +108,29 @@ export default async function BuildingDetailPage({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <EditBuildingDialog
-            buildingId={building.id}
-            defaultValues={{ name: building.name, address: building.address ?? "" }}
-          />
-          <Button variant="outline" asChild>
-            <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
-          </Button>
-          <ImportDataMenu buildingId={building.id} tenantId={building.tenant_id} />
-          <NewUnitDialog
+          {capabilities.includes("core.building.update") && (
+            <EditBuildingDialog
+              buildingId={building.id}
+              defaultValues={{ name: building.name, address: building.address ?? "" }}
+            />
+          )}
+          {capabilities.includes("finance.invoice.view") && (
+            <Button variant="outline" asChild>
+              <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
+            </Button>
+          )}
+          <ImportDataMenu
             buildingId={building.id}
             tenantId={building.tenant_id}
-            meterTypeOptions={meterTypeOptions}
+            capabilities={capabilities}
           />
+          {capabilities.includes("core.unit.create") && (
+            <NewUnitDialog
+              buildingId={building.id}
+              tenantId={building.tenant_id}
+              meterTypeOptions={meterTypeOptions}
+            />
+          )}
         </div>
       </div>
 
