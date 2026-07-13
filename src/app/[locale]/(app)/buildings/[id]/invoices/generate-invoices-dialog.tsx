@@ -1,0 +1,253 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { PlusIcon } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import { previewInvoiceGeneration, commitInvoiceGeneration } from "./actions";
+
+type FeeType = { id: string; label: string };
+
+type Selection = Record<string, { selected: boolean; amount: string }>;
+
+type PreviewResult = Awaited<ReturnType<typeof previewInvoiceGeneration>>;
+
+const methodLabelKeys: Record<string, string> = {
+  cota_parte: "methodCotaParte",
+  by_area: "methodByArea",
+  per_unit: "methodPerUnit",
+  per_resident: "methodPerResident",
+  by_meter: "methodByMeter",
+};
+
+export function GenerateInvoicesDialog({
+  buildingId,
+  feeTypes,
+}: {
+  buildingId: string;
+  feeTypes: FeeType[];
+}) {
+  const t = useTranslations("invoices");
+  const tFinance = useTranslations("financeSetup");
+  const tCommon = useTranslations("common");
+  const [open, setOpen] = useState(false);
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
+  const [selection, setSelection] = useState<Selection>(
+    Object.fromEntries(feeTypes.map((f) => [f.id, { selected: false, amount: "" }]))
+  );
+  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  function reset() {
+    setPeriodStart("");
+    setPeriodEnd("");
+    setSelection(Object.fromEntries(feeTypes.map((f) => [f.id, { selected: false, amount: "" }])));
+    setPreview(null);
+  }
+
+  function buildInput() {
+    const feeTypeInputs = Object.entries(selection)
+      .filter(([, v]) => v.selected && v.amount)
+      .map(([feeTypeId, v]) => ({ feeTypeId, totalAmount: Number(v.amount) }));
+    return { buildingId, periodStart, periodEnd, feeTypeInputs };
+  }
+
+  async function handlePreview() {
+    setPreviewing(true);
+    const result = await previewInvoiceGeneration(buildInput());
+    setPreviewing(false);
+    setPreview(result);
+  }
+
+  async function handleConfirm() {
+    setConfirming(true);
+    const result = await commitInvoiceGeneration(buildInput());
+    setConfirming(false);
+
+    if (result.error) {
+      toast.error(t("generateError"));
+      return;
+    }
+
+    toast.success(t("generateSuccess", { count: result.invoiced }));
+    reset();
+    setOpen(false);
+  }
+
+  const hasSelection = Object.values(selection).some((v) => v.selected && v.amount);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) reset();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button>
+          <PlusIcon />
+          {t("generate")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>{t("generate")}</DialogTitle>
+        </DialogHeader>
+
+        {feeTypes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("noFeeTypesConfigured")}</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>{t("periodStartLabel")}</Label>
+                <Input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => {
+                    setPeriodStart(e.target.value);
+                    setPreview(null);
+                  }}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("periodEndLabel")}</Label>
+                <Input
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => {
+                    setPeriodEnd(e.target.value);
+                    setPreview(null);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t("selectFeeTypes")}</Label>
+              {feeTypes.map((feeType) => (
+                <div key={feeType.id} className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selection[feeType.id]?.selected ?? false}
+                    onCheckedChange={(checked) => {
+                      setSelection((s) => ({
+                        ...s,
+                        [feeType.id]: { ...s[feeType.id], selected: checked === true },
+                      }));
+                      setPreview(null);
+                    }}
+                  />
+                  <span className="w-40 text-sm">{feeType.label}</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder={t("amountForPeriod")}
+                    disabled={!selection[feeType.id]?.selected}
+                    value={selection[feeType.id]?.amount ?? ""}
+                    onChange={(e) => {
+                      setSelection((s) => ({
+                        ...s,
+                        [feeType.id]: { ...s[feeType.id], amount: e.target.value },
+                      }));
+                      setPreview(null);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {preview && (
+              <div className="flex flex-col gap-2">
+                {preview.perFeeType.map((f) => (
+                  <div key={f.feeTypeId} className="text-sm">
+                    <span className="font-medium">{f.feeTypeLabel}</span>
+                    {" — "}
+                    {tFinance(methodLabelKeys[f.method])}
+                    {f.error === "no_active_rule" && (
+                      <Alert variant="destructive" className="mt-1">
+                        <AlertTitle>{t("noActiveRuleError")}</AlertTitle>
+                      </Alert>
+                    )}
+                    {f.error === "no_weight_data" && (
+                      <Alert variant="destructive" className="mt-1">
+                        <AlertTitle>{t("noWeightDataError")}</AlertTitle>
+                      </Alert>
+                    )}
+                    {f.excludedUnitIds.length > 0 && (
+                      <Alert className="mt-1">
+                        <AlertTitle>
+                          {t("excludedUnitsWarning", { count: f.excludedUnitIds.length })}
+                        </AlertTitle>
+                      </Alert>
+                    )}
+                  </div>
+                ))}
+                {preview.willSkipCount > 0 && (
+                  <Alert>
+                    <AlertTitle>
+                      {t("alreadyInvoicedWarning", {
+                        skip: preview.willSkipCount,
+                        total: preview.unitCount,
+                      })}
+                    </AlertTitle>
+                  </Alert>
+                )}
+                <Alert>
+                  <AlertTitle>
+                    {t("willInvoice", {
+                      count: preview.willInvoiceCount,
+                      total: preview.totalAcrossUnits.toFixed(2),
+                    })}
+                  </AlertTitle>
+                </Alert>
+              </div>
+            )}
+
+            <DialogFooter>
+              {!preview ? (
+                <Button
+                  onClick={handlePreview}
+                  disabled={previewing || !hasSelection || !periodStart || !periodEnd}
+                >
+                  {previewing ? t("previewing") : t("preview")}
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setPreview(null)}>
+                    {tCommon("back")}
+                  </Button>
+                  <Button
+                    onClick={handleConfirm}
+                    disabled={confirming || preview.willInvoiceCount === 0}
+                  >
+                    {confirming
+                      ? t("confirming")
+                      : t("confirm", { count: preview.willInvoiceCount })}
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

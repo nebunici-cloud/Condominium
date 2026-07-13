@@ -26,6 +26,7 @@ export default async function BuildingDetailPage({
 }) {
   const { id } = await params;
   const t = await getTranslations("units");
+  const tInvoices = await getTranslations("invoices");
   const supabase = await createClient();
 
   const { data: building } = await supabase
@@ -60,6 +61,9 @@ export default async function BuildingDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
+          </Button>
           <ImportOpeningBalancesDialog buildingId={building.id} tenantId={building.tenant_id} />
           <ImportOwnersDialog buildingId={building.id} tenantId={building.tenant_id} />
           <ImportUnitsDialog buildingId={building.id} tenantId={building.tenant_id} />
