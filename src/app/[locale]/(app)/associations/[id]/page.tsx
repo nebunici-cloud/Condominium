@@ -47,7 +47,7 @@ export default async function AssociationDetailPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <Breadcrumbs
         items={[
           { label: tAssociations("title"), href: "/associations" },
@@ -55,7 +55,7 @@ export default async function AssociationDetailPage({
         ]}
       />
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
@@ -83,33 +83,35 @@ export default async function AssociationDetailPage({
       {!buildings || buildings.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noBuildings")}</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("nameLabel")}</TableHead>
-              <TableHead>{t("addressLabel")}</TableHead>
-              <TableHead>{tUnits("title")}</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {buildings.map((building) => (
-              <TableRow key={building.id} className="relative cursor-pointer">
-                <TableCell className="font-medium">{building.name}</TableCell>
-                <TableCell>{building.address ?? "—"}</TableCell>
-                <TableCell>
-                  {t("unitsCount", { count: building.units?.[0]?.count ?? 0 })}
-                </TableCell>
-                <TableCell>
-                  <Link href={`/buildings/${building.id}`} className="absolute inset-0">
-                    <span className="sr-only">{t("viewDetails")}</span>
-                  </Link>
-                  <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("nameLabel")}</TableHead>
+                <TableHead>{t("addressLabel")}</TableHead>
+                <TableHead>{tUnits("title")}</TableHead>
+                <TableHead />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {buildings.map((building) => (
+                <TableRow key={building.id} className="relative cursor-pointer">
+                  <TableCell className="font-medium">{building.name}</TableCell>
+                  <TableCell>{building.address ?? "—"}</TableCell>
+                  <TableCell>
+                    {t("unitsCount", { count: building.units?.[0]?.count ?? 0 })}
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/buildings/${building.id}`} className="absolute inset-0">
+                      <span className="sr-only">{t("viewDetails")}</span>
+                    </Link>
+                    <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </main>
   );

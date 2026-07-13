@@ -89,7 +89,7 @@ export default async function UnitDetailPage({
   const currentShareSumRounded = Math.round(currentShareSum * 1000) / 1000;
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <Breadcrumbs
         items={[
           { label: tAssociations("title"), href: "/associations" },
@@ -101,7 +101,7 @@ export default async function UnitDetailPage({
         ]}
       />
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">
           {t("title")} — {unit.unit_number}
         </h1>
@@ -124,7 +124,7 @@ export default async function UnitDetailPage({
       </div>
 
       <section className="mb-10">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium">{tOwnerships("title")}</h2>
           <NewOwnershipDialog
             unitId={unit.id}
@@ -149,53 +149,55 @@ export default async function UnitDetailPage({
         {!ownerships || ownerships.length === 0 ? (
           <p className="text-sm text-muted-foreground">{tOwnerships("noOwnerships")}</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tOwnerships("ownerLabel")}</TableHead>
-                <TableHead>{tOwnerships("sharePercentLabel")}</TableHead>
-                <TableHead>{tCommon("status")}</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ownerships.map((ownership) => {
-                const isCurrent = !ownership.effective_to;
-                return (
-                  <TableRow key={ownership.id}>
-                    <TableCell className="font-medium">
-                      {ownership.owners?.[0]?.full_name ?? "—"}
-                    </TableCell>
-                    <TableCell>{ownership.share_percent}%</TableCell>
-                    <TableCell>
-                      <Badge variant={isCurrent ? "default" : "secondary"}>
-                        {isCurrent ? tOwnerships("current") : tOwnerships("historical")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {isCurrent && (
-                        <EndEffectiveDatedButton
-                          id={ownership.id}
-                          action={endOwnership}
-                          triggerLabel={tOwnerships("endOwnership")}
-                          confirmTitle={tOwnerships("endOwnership")}
-                          confirmDescription={tOwnerships("endOwnershipConfirm")}
-                          successMessage={tOwnerships("endSuccess")}
-                          cancelLabel={tCommon("cancel")}
-                          confirmLabel={tCommon("confirm")}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tOwnerships("ownerLabel")}</TableHead>
+                  <TableHead>{tOwnerships("sharePercentLabel")}</TableHead>
+                  <TableHead>{tCommon("status")}</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ownerships.map((ownership) => {
+                  const isCurrent = !ownership.effective_to;
+                  return (
+                    <TableRow key={ownership.id}>
+                      <TableCell className="font-medium">
+                        {ownership.owners?.[0]?.full_name ?? "—"}
+                      </TableCell>
+                      <TableCell>{ownership.share_percent}%</TableCell>
+                      <TableCell>
+                        <Badge variant={isCurrent ? "default" : "secondary"}>
+                          {isCurrent ? tOwnerships("current") : tOwnerships("historical")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {isCurrent && (
+                          <EndEffectiveDatedButton
+                            id={ownership.id}
+                            action={endOwnership}
+                            triggerLabel={tOwnerships("endOwnership")}
+                            confirmTitle={tOwnerships("endOwnership")}
+                            confirmDescription={tOwnerships("endOwnershipConfirm")}
+                            successMessage={tOwnerships("endSuccess")}
+                            cancelLabel={tCommon("cancel")}
+                            confirmLabel={tCommon("confirm")}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
 
       <section>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium">{tOccupancies("title")}</h2>
           <NewOccupancyDialog unitId={unit.id} tenantId={unit.tenant_id} />
         </div>
@@ -203,53 +205,55 @@ export default async function UnitDetailPage({
         {!occupancies || occupancies.length === 0 ? (
           <p className="text-sm text-muted-foreground">{tOccupancies("noOccupancies")}</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tOccupancies("fullNameLabel")}</TableHead>
-                <TableHead>{tCommon("status")}</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {occupancies.map((occupancy) => {
-                const isCurrent = !occupancy.effective_to;
-                return (
-                  <TableRow key={occupancy.id}>
-                    <TableCell className="font-medium">
-                      {occupancy.occupants?.[0]?.full_name ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={isCurrent ? "default" : "secondary"}>
-                        {isCurrent
-                          ? tOwnerships("current")
-                          : tOwnerships("historical")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {isCurrent && (
-                        <EndEffectiveDatedButton
-                          id={occupancy.id}
-                          action={endOccupancy}
-                          triggerLabel={tOccupancies("endOccupancy")}
-                          confirmTitle={tOccupancies("endOccupancy")}
-                          confirmDescription={tOccupancies("endOccupancyConfirm")}
-                          successMessage={tOccupancies("endSuccess")}
-                          cancelLabel={tCommon("cancel")}
-                          confirmLabel={tCommon("confirm")}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tOccupancies("fullNameLabel")}</TableHead>
+                  <TableHead>{tCommon("status")}</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {occupancies.map((occupancy) => {
+                  const isCurrent = !occupancy.effective_to;
+                  return (
+                    <TableRow key={occupancy.id}>
+                      <TableCell className="font-medium">
+                        {occupancy.occupants?.[0]?.full_name ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={isCurrent ? "default" : "secondary"}>
+                          {isCurrent
+                            ? tOwnerships("current")
+                            : tOwnerships("historical")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {isCurrent && (
+                          <EndEffectiveDatedButton
+                            id={occupancy.id}
+                            action={endOccupancy}
+                            triggerLabel={tOccupancies("endOccupancy")}
+                            confirmTitle={tOccupancies("endOccupancy")}
+                            confirmDescription={tOccupancies("endOccupancyConfirm")}
+                            successMessage={tOccupancies("endSuccess")}
+                            cancelLabel={tCommon("cancel")}
+                            confirmLabel={tCommon("confirm")}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
 
       <section className="mt-10">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-medium">{tPayments("title")}</h2>
           <RecordPaymentDialog
             unitId={unit.id}
@@ -261,38 +265,40 @@ export default async function UnitDetailPage({
         {!payments || payments.length === 0 ? (
           <p className="text-sm text-muted-foreground">{tPayments("noPayments")}</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tPayments("paidAtLabel")}</TableHead>
-                <TableHead>{tPayments("amountLabel")}</TableHead>
-                <TableHead>{tPayments("methodLabel")}</TableHead>
-                <TableHead>{tInvoices("period")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>{payment.paid_at}</TableCell>
-                  <TableCell className="font-medium">{payment.amount}</TableCell>
-                  <TableCell>{payment.method ?? "—"}</TableCell>
-                  <TableCell>
-                    {payment.matched_invoice_id ? (
-                      <Badge variant="secondary">
-                        {outstandingInvoices?.find((i) => i.id === payment.matched_invoice_id)
-                          ?.billing_period_start ?? tPayments("matchButton")}
-                      </Badge>
-                    ) : (
-                      <MatchPaymentButton
-                        paymentId={payment.id}
-                        outstandingInvoices={outstandingInvoices ?? []}
-                      />
-                    )}
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tPayments("paidAtLabel")}</TableHead>
+                  <TableHead>{tPayments("amountLabel")}</TableHead>
+                  <TableHead>{tPayments("methodLabel")}</TableHead>
+                  <TableHead>{tInvoices("period")}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {payments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell>{payment.paid_at}</TableCell>
+                    <TableCell className="font-medium">{payment.amount}</TableCell>
+                    <TableCell>{payment.method ?? "—"}</TableCell>
+                    <TableCell>
+                      {payment.matched_invoice_id ? (
+                        <Badge variant="secondary">
+                          {outstandingInvoices?.find((i) => i.id === payment.matched_invoice_id)
+                            ?.billing_period_start ?? tPayments("matchButton")}
+                        </Badge>
+                      ) : (
+                        <MatchPaymentButton
+                          paymentId={payment.id}
+                          outstandingInvoices={outstandingInvoices ?? []}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </section>
     </main>

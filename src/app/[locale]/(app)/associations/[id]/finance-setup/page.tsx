@@ -62,7 +62,7 @@ export default async function FinanceSetupPage({
   const suggestedNotEnabled = (suggestions ?? []).filter((s) => !existingKeys.has(s.key));
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <Breadcrumbs
         items={[
           { label: tAssociations("title"), href: "/associations" },

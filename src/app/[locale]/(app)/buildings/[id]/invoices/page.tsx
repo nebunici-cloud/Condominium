@@ -68,7 +68,7 @@ export default async function BuildingInvoicesPage({
   ]);
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <Breadcrumbs
         items={[
           { label: tAssociations("title"), href: "/associations" },
@@ -78,7 +78,7 @@ export default async function BuildingInvoicesPage({
         ]}
       />
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
@@ -91,32 +91,34 @@ export default async function BuildingInvoicesPage({
       {!invoices || invoices.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noInvoices")}</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{tUnits("unitNumberLabel")}</TableHead>
-              <TableHead>{t("period")}</TableHead>
-              <TableHead>{t("totalAmount")}</TableHead>
-              <TableHead>{tCommon("status")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell className="font-medium">{invoice.units?.[0]?.unit_number}</TableCell>
-                <TableCell>
-                  {invoice.billing_period_start} – {invoice.billing_period_end}
-                </TableCell>
-                <TableCell>{invoice.total_amount}</TableCell>
-                <TableCell>
-                  <Badge variant={statusVariant[invoice.status]}>
-                    {t(statusLabelKeys[invoice.status])}
-                  </Badge>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{tUnits("unitNumberLabel")}</TableHead>
+                <TableHead>{t("period")}</TableHead>
+                <TableHead>{t("totalAmount")}</TableHead>
+                <TableHead>{tCommon("status")}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {invoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-medium">{invoice.units?.[0]?.unit_number}</TableCell>
+                  <TableCell>
+                    {invoice.billing_period_start} – {invoice.billing_period_end}
+                  </TableCell>
+                  <TableCell>{invoice.total_amount}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[invoice.status]}>
+                      {t(statusLabelKeys[invoice.status])}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </main>
   );

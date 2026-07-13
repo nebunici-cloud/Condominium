@@ -26,8 +26,8 @@ export default async function AssociationsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
@@ -38,42 +38,44 @@ export default async function AssociationsPage() {
       {!associations || associations.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noAssociations")}</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("nameLabel")}</TableHead>
-              <TableHead>{t("legalIdLabel")}</TableHead>
-              <TableHead>{tBuildings("title")}</TableHead>
-              <TableHead>{tCommon("createdAt")}</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {associations.map((association) => (
-              <TableRow key={association.id} className="relative cursor-pointer">
-                <TableCell className="font-medium">{association.name}</TableCell>
-                <TableCell>{association.legal_id ?? "—"}</TableCell>
-                <TableCell>
-                  {t("buildingsCount", {
-                    count: association.buildings?.[0]?.count ?? 0,
-                  })}
-                </TableCell>
-                <TableCell>
-                  {new Date(association.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/associations/${association.id}`}
-                    className="absolute inset-0"
-                  >
-                    <span className="sr-only">{t("viewDetails")}</span>
-                  </Link>
-                  <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("nameLabel")}</TableHead>
+                <TableHead>{t("legalIdLabel")}</TableHead>
+                <TableHead>{tBuildings("title")}</TableHead>
+                <TableHead>{tCommon("createdAt")}</TableHead>
+                <TableHead />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {associations.map((association) => (
+                <TableRow key={association.id} className="relative cursor-pointer">
+                  <TableCell className="font-medium">{association.name}</TableCell>
+                  <TableCell>{association.legal_id ?? "—"}</TableCell>
+                  <TableCell>
+                    {t("buildingsCount", {
+                      count: association.buildings?.[0]?.count ?? 0,
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(association.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/associations/${association.id}`}
+                      className="absolute inset-0"
+                    >
+                      <span className="sr-only">{t("viewDetails")}</span>
+                    </Link>
+                    <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </main>
   );

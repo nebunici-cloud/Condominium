@@ -45,7 +45,7 @@ export default async function ConfigPage({
     : { data: [] };
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
@@ -72,7 +72,7 @@ export default async function ConfigPage({
         <p className="text-sm text-muted-foreground">{t("noEntries")}</p>
       ) : (
         <>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-lg font-medium">{selected.name}</h2>
             <NewConfigEntryDialog
               tenantId={selected.tenant_id}
@@ -84,36 +84,38 @@ export default async function ConfigPage({
           {!entries || entries.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noEntries")}</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("category")}</TableHead>
-                  <TableHead>{t("key")}</TableHead>
-                  <TableHead>{t("label")}</TableHead>
-                  <TableHead>{tCommon("status")}</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>
-                      <Badge variant="outline">{entry.category}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{entry.key}</TableCell>
-                    <TableCell className="font-medium">{entry.label}</TableCell>
-                    <TableCell>
-                      <Badge variant={entry.is_active ? "default" : "secondary"}>
-                        {entry.is_active ? tCommon("active") : tCommon("inactive")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <ToggleActiveButton id={entry.id} isActive={entry.is_active} />
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("category")}</TableHead>
+                    <TableHead>{t("key")}</TableHead>
+                    <TableHead>{t("label")}</TableHead>
+                    <TableHead>{tCommon("status")}</TableHead>
+                    <TableHead />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {entries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <Badge variant="outline">{entry.category}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{entry.key}</TableCell>
+                      <TableCell className="font-medium">{entry.label}</TableCell>
+                      <TableCell>
+                        <Badge variant={entry.is_active ? "default" : "secondary"}>
+                          {entry.is_active ? tCommon("active") : tCommon("inactive")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <ToggleActiveButton id={entry.id} isActive={entry.is_active} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </>
       )}

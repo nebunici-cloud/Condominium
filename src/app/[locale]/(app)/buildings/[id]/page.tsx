@@ -57,7 +57,7 @@ export default async function BuildingDetailPage({
   const associationName = building.associations?.[0]?.name ?? tBuildings("title");
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <Breadcrumbs
         items={[
           { label: tAssociations("title"), href: "/associations" },
@@ -66,7 +66,7 @@ export default async function BuildingDetailPage({
         ]}
       />
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
@@ -105,33 +105,35 @@ export default async function BuildingDetailPage({
       {!units || units.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noUnits")}</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("unitNumberLabel")}</TableHead>
-              <TableHead>{t("floorLabel")}</TableHead>
-              <TableHead>{t("areaLabel")}</TableHead>
-              <TableHead>{t("shareLabel")}</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {units.map((unit) => (
-              <TableRow key={unit.id} className="relative cursor-pointer">
-                <TableCell className="font-medium">{unit.unit_number}</TableCell>
-                <TableCell>{unit.floor ?? "—"}</TableCell>
-                <TableCell>{unit.area_sqm ?? "—"}</TableCell>
-                <TableCell>{unit.ownership_share_percent ?? "—"}</TableCell>
-                <TableCell>
-                  <Link href={`/units/${unit.id}`} className="absolute inset-0">
-                    <span className="sr-only">{t("viewDetails")}</span>
-                  </Link>
-                  <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("unitNumberLabel")}</TableHead>
+                <TableHead>{t("floorLabel")}</TableHead>
+                <TableHead>{t("areaLabel")}</TableHead>
+                <TableHead>{t("shareLabel")}</TableHead>
+                <TableHead />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {units.map((unit) => (
+                <TableRow key={unit.id} className="relative cursor-pointer">
+                  <TableCell className="font-medium">{unit.unit_number}</TableCell>
+                  <TableCell>{unit.floor ?? "—"}</TableCell>
+                  <TableCell>{unit.area_sqm ?? "—"}</TableCell>
+                  <TableCell>{unit.ownership_share_percent ?? "—"}</TableCell>
+                  <TableCell>
+                    <Link href={`/units/${unit.id}`} className="absolute inset-0">
+                      <span className="sr-only">{t("viewDetails")}</span>
+                    </Link>
+                    <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </main>
   );
