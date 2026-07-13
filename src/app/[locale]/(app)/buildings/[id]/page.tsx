@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { embedOne } from "@/lib/embed";
 import { Link } from "@/i18n/navigation";
 import {
   Table,
@@ -54,7 +55,7 @@ export default async function BuildingDetailPage({
   );
   const shareSumRounded = Math.round(shareSum * 1000) / 1000;
 
-  const associationName = building.associations?.[0]?.name ?? tBuildings("title");
+  const associationName = embedOne(building.associations)?.name ?? tBuildings("title");
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">

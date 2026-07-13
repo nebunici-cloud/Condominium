@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { embedOne } from "@/lib/embed";
 import {
   Table,
   TableBody,
@@ -49,10 +50,10 @@ export default async function UnitDetailPage({
     notFound();
   }
 
-  const building = unit.buildings?.[0];
+  const building = embedOne(unit.buildings);
   const buildingName = building?.name ?? t("title");
   const associationId = building?.association_id;
-  const associationName = building?.associations?.[0]?.name ?? tAssociations("title");
+  const associationName = embedOne(building?.associations)?.name ?? tAssociations("title");
 
   const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
     await Promise.all([
@@ -165,7 +166,7 @@ export default async function UnitDetailPage({
                   return (
                     <TableRow key={ownership.id}>
                       <TableCell className="font-medium">
-                        {ownership.owners?.[0]?.full_name ?? "—"}
+                        {embedOne(ownership.owners)?.full_name ?? "—"}
                       </TableCell>
                       <TableCell>{ownership.share_percent}%</TableCell>
                       <TableCell>
@@ -220,7 +221,7 @@ export default async function UnitDetailPage({
                   return (
                     <TableRow key={occupancy.id}>
                       <TableCell className="font-medium">
-                        {occupancy.occupants?.[0]?.full_name ?? "—"}
+                        {embedOne(occupancy.occupants)?.full_name ?? "—"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={isCurrent ? "default" : "secondary"}>

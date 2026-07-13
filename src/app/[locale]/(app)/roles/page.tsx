@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { embedOne } from "@/lib/embed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,7 +27,7 @@ export default async function RolesPage() {
         <div className="grid gap-4">
           {roles.map((role) => {
             const capabilities = role.role_capabilities
-              .map((rc) => rc.capabilities?.[0])
+              .map((rc) => embedOne(rc.capabilities))
               .filter((c): c is { code: string; description: string } => Boolean(c));
 
             return (

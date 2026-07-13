@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { embedOne } from "@/lib/embed";
 import {
   Table,
   TableBody,
@@ -51,7 +52,7 @@ export default async function BuildingInvoicesPage({
     notFound();
   }
 
-  const associationName = building.associations?.[0]?.name ?? tAssociations("title");
+  const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
 
   const [{ data: feeTypes }, { data: invoices }] = await Promise.all([
     supabase
@@ -104,7 +105,7 @@ export default async function BuildingInvoicesPage({
             <TableBody>
               {invoices.map((invoice) => (
                 <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.units?.[0]?.unit_number}</TableCell>
+                  <TableCell className="font-medium">{embedOne(invoice.units)?.unit_number}</TableCell>
                   <TableCell>
                     {invoice.billing_period_start} – {invoice.billing_period_end}
                   </TableCell>
