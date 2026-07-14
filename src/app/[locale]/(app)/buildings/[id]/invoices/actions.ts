@@ -237,32 +237,28 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
     (u) => !alreadyInvoicedUnitIds.has(u.unitId) && (totalsByUnit.get(u.unitId) ?? 0) > 0
   );
 
-  let invoiced = 0;
+  if (unitsToInvoice.length === 0) {
+    return { error: null, invoiced: 0 };
+  }
 
-  for (const unit of unitsToInvoice) {
-    const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .insert({
-        tenant_id: building.tenant_id,
-        unit_id: unit.unitId,
-        billing_period_start: parsed.periodStart,
-        billing_period_end: parsed.periodEnd,
-        total_amount: totalsByUnit.get(unit.unitId) ?? 0,
-        generated_by: user?.id ?? null,
-      })
-      .select("id")
-      .single();
+  const invoiceRows = unitsToInvoice.map((unit) => ({
+    tenant_id: building.tenant_id,
+    unit_id: unit.unitId,
+    billing_period_start: parsed.periodStart,
+    billing_period_end: parsed.periodEnd,
+    total_amount: totalsByUnit.get(unit.unitId) ?? 0,
+    generated_by: user?.id ?? "",
+  }));
 
-    if (invoiceError || !invoice) continue;
-
-    const lineRows = perFeeType
+  const lineRows = unitsToInvoice.flatMap((unit) =>
+    perFeeType
       .filter((f) => !f.error)
       .map((f) => {
         const line = f.lines.find((l) => l.unitId === unit.unitId);
         if (!line) return null;
         return {
           tenant_id: building.tenant_id,
-          invoice_id: invoice.id,
+          unit_id: unit.unitId,
           fee_type_id: f.feeTypeId,
           allocation_rule_id: f.allocationRuleId,
           amount: line.amount,
@@ -273,17 +269,24 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
           },
         };
       })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+  );
 
-    if (lineRows.length > 0) {
-      await supabase.from("invoice_lines").insert(lineRows);
-    }
+  // One RPC call = one transaction: either every invoice and line in
+  // this run is created, or (a constraint violation, a dropped
+  // connection mid-batch) none of it is -- no more half-generated
+  // periods to clean up by hand.
+  const { data: invoiced, error } = await supabase.rpc("commit_invoice_batch", {
+    p_invoices: invoiceRows,
+    p_lines: lineRows,
+  });
 
-    invoiced += 1;
+  if (error) {
+    return { error: error.message, invoiced: 0 };
   }
 
   revalidatePath("/", "layout");
-  return { error: null, invoiced };
+  return { error: null, invoiced: invoiced ?? 0 };
 }
 
 // Cancelling clears any payment matched to this invoice rather than
