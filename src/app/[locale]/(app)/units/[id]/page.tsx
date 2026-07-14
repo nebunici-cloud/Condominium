@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
 import { embedOne } from "@/lib/embed";
 import { getMeterTypeOptions } from "@/lib/meter-types";
+import { computeOutstandingBalance } from "@/lib/balance";
 import {
   Table,
   TableBody,
@@ -39,6 +40,7 @@ export default async function UnitDetailPage({
   const tPayments = await getTranslations("payments");
   const tInvoices = await getTranslations("invoices");
   const tMeterReadings = await getTranslations("meterReadings");
+  const tBalance = await getTranslations("balance");
   const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
@@ -71,6 +73,8 @@ export default async function UnitDetailPage({
     { data: payments },
     { data: outstandingInvoices },
     { data: meterReadings },
+    { data: allInvoices },
+    { data: openingBalance },
   ] = await Promise.all([
       supabase
         .from("ownerships")
@@ -103,7 +107,17 @@ export default async function UnitDetailPage({
         .eq("unit_id", id)
         .order("reading_date", { ascending: false })
         .limit(20),
+      supabase.from("invoices").select("total_amount, status").eq("unit_id", id),
+      supabase.from("opening_balances").select("amount, as_of_date").eq("unit_id", id).maybeSingle(),
     ]);
+
+  const outstandingBalance = computeOutstandingBalance({
+    openingBalance: openingBalance?.amount ?? 0,
+    invoiceTotal: (allInvoices ?? [])
+      .filter((i) => i.status !== "cancelled")
+      .reduce((sum, i) => sum + i.total_amount, 0),
+    paymentTotal: (payments ?? []).reduce((sum, p) => sum + p.amount, 0),
+  });
 
   const unitMeters = Array.isArray(unit.meters)
     ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
@@ -330,6 +344,18 @@ export default async function UnitDetailPage({
             />
           )}
         </div>
+
+        {capabilities.includes("finance.invoice.view") && (
+          <Alert variant={outstandingBalance > 0 ? "destructive" : "default"} className="mb-4">
+            <AlertTitle>
+              {outstandingBalance > 0
+                ? tBalance("owed", { amount: outstandingBalance.toFixed(2) })
+                : outstandingBalance < 0
+                  ? tBalance("credit", { amount: Math.abs(outstandingBalance).toFixed(2) })
+                  : tBalance("settled")}
+            </AlertTitle>
+          </Alert>
+        )}
 
         {!payments || payments.length === 0 ? (
           <p className="text-sm text-muted-foreground">{tPayments("noPayments")}</p>

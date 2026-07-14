@@ -377,6 +377,11 @@
     "errorInvalidNumber": "Valoare numerică invalidă",
     "errorInvalidDate": "Dată invalidă"
   },
+  "balance": {
+    "owed": "Sold de plată: {amount}.",
+    "credit": "Sold în avans (credit): {amount}.",
+    "settled": "Sold la zi, fără datorii."
+  },
   "financeSetup": {
     "title": "Configurare financiară",
     "subtitle": "Configurează tipurile de cheltuieli și metodele de alocare pentru {association}",
