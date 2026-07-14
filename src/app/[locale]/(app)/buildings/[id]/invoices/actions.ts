@@ -25,6 +25,91 @@ const requestSchema = z.object({
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function startOfMonth(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
+}
+
+function endOfMonth(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+}
+
+// Removes two of the most common ways to fat-finger a billing run:
+// picking dates that don't line up with the last period (we've seen a
+// real one-day period in production data from this), and typing a
+// fee-type amount from memory instead of what it actually was last
+// time. Defaults are only ever a starting point -- every field stays
+// editable, this just replaces "blank" with "what's most likely
+// right."
+export async function getBillingDefaults(
+  supabase: SupabaseClient,
+  buildingId: string
+): Promise<{
+  defaultPeriodStart: string;
+  defaultPeriodEnd: string;
+  suggestedAmounts: Record<string, number>;
+}> {
+  const today = new Date().toISOString().slice(0, 10);
+  const fallback = {
+    defaultPeriodStart: startOfMonth(today),
+    defaultPeriodEnd: endOfMonth(today),
+    suggestedAmounts: {} as Record<string, number>,
+  };
+
+  const { data: units } = await supabase.from("units").select("id").eq("building_id", buildingId);
+  const unitIds = (units ?? []).map((u) => u.id);
+  if (unitIds.length === 0) return fallback;
+
+  const { data: lastInvoice } = await supabase
+    .from("invoices")
+    .select("billing_period_start, billing_period_end")
+    .in("unit_id", unitIds)
+    .neq("status", "cancelled")
+    .order("billing_period_end", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lastInvoice) return fallback;
+
+  const defaultPeriodStart = addDays(lastInvoice.billing_period_end, 1);
+  const defaultPeriodEnd = endOfMonth(defaultPeriodStart);
+
+  const { data: periodInvoices } = await supabase
+    .from("invoices")
+    .select("id")
+    .in("unit_id", unitIds)
+    .eq("billing_period_start", lastInvoice.billing_period_start)
+    .eq("billing_period_end", lastInvoice.billing_period_end)
+    .neq("status", "cancelled");
+
+  const invoiceIds = (periodInvoices ?? []).map((i) => i.id);
+  const suggestedAmounts: Record<string, number> = {};
+
+  if (invoiceIds.length > 0) {
+    const { data: lines } = await supabase
+      .from("invoice_lines")
+      .select("fee_type_id, amount")
+      .in("invoice_id", invoiceIds);
+
+    for (const line of lines ?? []) {
+      suggestedAmounts[line.fee_type_id] = round2((suggestedAmounts[line.fee_type_id] ?? 0) + line.amount);
+    }
+  }
+
+  return { defaultPeriodStart, defaultPeriodEnd, suggestedAmounts };
+}
+
 async function computeInvoiceLines(
   supabase: SupabaseClient,
   buildingId: string,

@@ -35,30 +35,54 @@ const methodLabelKeys: Record<string, string> = {
   by_meter: "methodByMeter",
 };
 
+// A fee type deviating this much from what it actually cost last
+// period is worth flagging -- utility bills fluctuate normally, this
+// is only meant to catch "typed the wrong number" territory.
+const DEVIATION_WARNING_THRESHOLD = 0.2;
+
 export function GenerateInvoicesDialog({
   buildingId,
   feeTypes,
+  defaultPeriodStart,
+  defaultPeriodEnd,
+  suggestedAmounts,
 }: {
   buildingId: string;
   feeTypes: FeeType[];
+  defaultPeriodStart: string;
+  defaultPeriodEnd: string;
+  suggestedAmounts: Record<string, number>;
 }) {
   const t = useTranslations("invoices");
   const tFinance = useTranslations("financeSetup");
   const tCommon = useTranslations("common");
+
+  function defaultSelection(): Selection {
+    return Object.fromEntries(
+      feeTypes.map((f) => {
+        const suggested = suggestedAmounts[f.id];
+        return [
+          f.id,
+          suggested === undefined
+            ? { selected: false, amount: "" }
+            : { selected: true, amount: String(suggested) },
+        ];
+      })
+    );
+  }
+
   const [open, setOpen] = useState(false);
-  const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState("");
-  const [selection, setSelection] = useState<Selection>(
-    Object.fromEntries(feeTypes.map((f) => [f.id, { selected: false, amount: "" }]))
-  );
+  const [periodStart, setPeriodStart] = useState(defaultPeriodStart);
+  const [periodEnd, setPeriodEnd] = useState(defaultPeriodEnd);
+  const [selection, setSelection] = useState<Selection>(defaultSelection);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   function reset() {
-    setPeriodStart("");
-    setPeriodEnd("");
-    setSelection(Object.fromEntries(feeTypes.map((f) => [f.id, { selected: false, amount: "" }])));
+    setPeriodStart(defaultPeriodStart);
+    setPeriodEnd(defaultPeriodEnd);
+    setSelection(defaultSelection());
     setPreview(null);
   }
 
@@ -92,6 +116,7 @@ export function GenerateInvoicesDialog({
   }
 
   const hasSelection = Object.values(selection).some((v) => v.selected && v.amount);
+  const periodInvalid = Boolean(periodStart && periodEnd && periodEnd < periodStart);
 
   return (
     <Dialog
@@ -140,38 +165,58 @@ export function GenerateInvoicesDialog({
                 />
               </div>
             </div>
+            {periodInvalid && (
+              <p className="text-xs text-destructive">{t("periodInvalid")}</p>
+            )}
 
             <div className="grid gap-2">
               <Label>{t("selectFeeTypes")}</Label>
-              {feeTypes.map((feeType) => (
-                <div key={feeType.id} className="flex items-center gap-3">
-                  <Checkbox
-                    checked={selection[feeType.id]?.selected ?? false}
-                    onCheckedChange={(checked) => {
-                      setSelection((s) => ({
-                        ...s,
-                        [feeType.id]: { ...s[feeType.id], selected: checked === true },
-                      }));
-                      setPreview(null);
-                    }}
-                  />
-                  <span className="w-40 text-sm">{feeType.label}</span>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder={t("amountForPeriod")}
-                    disabled={!selection[feeType.id]?.selected}
-                    value={selection[feeType.id]?.amount ?? ""}
-                    onChange={(e) => {
-                      setSelection((s) => ({
-                        ...s,
-                        [feeType.id]: { ...s[feeType.id], amount: e.target.value },
-                      }));
-                      setPreview(null);
-                    }}
-                  />
-                </div>
-              ))}
+              {feeTypes.map((feeType) => {
+                const amount = selection[feeType.id]?.amount ?? "";
+                const suggested = suggestedAmounts[feeType.id];
+                const deviates =
+                  suggested !== undefined &&
+                  amount !== "" &&
+                  Math.abs(Number(amount) - suggested) > suggested * DEVIATION_WARNING_THRESHOLD;
+                return (
+                  <div key={feeType.id} className="flex flex-col gap-1">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={selection[feeType.id]?.selected ?? false}
+                        onCheckedChange={(checked) => {
+                          setSelection((s) => ({
+                            ...s,
+                            [feeType.id]: { ...s[feeType.id], selected: checked === true },
+                          }));
+                          setPreview(null);
+                        }}
+                      />
+                      <span className="w-40 text-sm">{feeType.label}</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder={t("amountForPeriod")}
+                        disabled={!selection[feeType.id]?.selected}
+                        value={amount}
+                        onChange={(e) => {
+                          setSelection((s) => ({
+                            ...s,
+                            [feeType.id]: { ...s[feeType.id], amount: e.target.value },
+                          }));
+                          setPreview(null);
+                        }}
+                      />
+                    </div>
+                    {suggested !== undefined && (
+                      <p
+                        className={`ml-8 text-xs ${deviates ? "text-destructive" : "text-muted-foreground"}`}
+                      >
+                        {t("lastAmountHint", { amount: suggested })}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {preview && (
@@ -225,7 +270,7 @@ export function GenerateInvoicesDialog({
               {!preview ? (
                 <Button
                   onClick={handlePreview}
-                  disabled={previewing || !hasSelection || !periodStart || !periodEnd}
+                  disabled={previewing || !hasSelection || !periodStart || !periodEnd || periodInvalid}
                 >
                   {previewing ? t("previewing") : t("preview")}
                 </Button>

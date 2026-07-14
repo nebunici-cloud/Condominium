@@ -17,7 +17,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
-import { cancelInvoice } from "./actions";
+import { cancelInvoice, getBillingDefaults } from "./actions";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   issued: "outline",
@@ -62,7 +62,7 @@ export default async function BuildingInvoicesPage({
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
 
-  const [{ data: feeTypes }, { data: invoices }] = await Promise.all([
+  const [{ data: feeTypes }, { data: invoices }, billingDefaults] = await Promise.all([
     supabase
       .from("fee_types")
       .select("id, label")
@@ -74,6 +74,7 @@ export default async function BuildingInvoicesPage({
       .select("id, billing_period_start, billing_period_end, total_amount, status, units!inner(unit_number, building_id)")
       .eq("units.building_id", id)
       .order("billing_period_start", { ascending: false }),
+    getBillingDefaults(supabase, id),
   ]);
 
   return (
@@ -95,7 +96,13 @@ export default async function BuildingInvoicesPage({
           </p>
         </div>
         {capabilities.includes("finance.invoice.generate") && (
-          <GenerateInvoicesDialog buildingId={building.id} feeTypes={feeTypes ?? []} />
+          <GenerateInvoicesDialog
+            buildingId={building.id}
+            feeTypes={feeTypes ?? []}
+            defaultPeriodStart={billingDefaults.defaultPeriodStart}
+            defaultPeriodEnd={billingDefaults.defaultPeriodEnd}
+            suggestedAmounts={billingDefaults.suggestedAmounts}
+          />
         )}
       </div>
 

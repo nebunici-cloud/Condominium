@@ -448,7 +448,9 @@
     "statusCancelled": "Anulată",
     "cancelInvoice": "Anulează factura",
     "cancelInvoiceConfirm": "Ești sigur? Factura va fi marcată drept anulată, iar orice plată asociată ei va rămâne neasociată (poate fi asociată din nou altei facturi).",
-    "cancelSuccess": "Factura a fost anulată."
+    "cancelSuccess": "Factura a fost anulată.",
+    "periodInvalid": "Sfârșitul perioadei trebuie să fie după începutul perioadei.",
+    "lastAmountHint": "Ultima dată: {amount}"
   },
   "payments": {
     "title": "Plăți",
