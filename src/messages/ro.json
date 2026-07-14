@@ -236,7 +236,7 @@
     "subtitle": "Seturile implicite de roluri și permisiunile (capabilități) asociate fiecăruia",
     "capabilities": "Capabilități",
     "noCapabilities": "Niciun rol încă.",
-    "associationScopedHint": "Aici sunt afișate doar capabilitățile valabile pentru toată organizația. Permisiunile specifice unei asociații (blocuri, apartamente, taxe, facturi etc.) se editează din pagina fiecărei asociații, la secțiunea „Permisiuni”.",
+    "associationScopedHint": "Aici sunt afișate doar capabilitățile valabile pentru toată organizația. Permisiunile specifice unei asociații (blocuri, apartamente, taxe, facturi etc.) se editează din butonul „Permisiuni” de mai sus.",
     "owner": "Proprietar",
     "occupant_tenant": "Chiriaș",
     "board_president": "Președinte de asociație",
@@ -306,6 +306,8 @@
   "permissions": {
     "pageTitle": "Permisiuni",
     "pageSubtitle": "Alege un rol pentru a edita ce poate face în asociația {association}.",
+    "pickerSubtitle": "Alege asociația pentru care vrei să editezi permisiunile rolurilor.",
+    "noManageableAssociations": "Nu ai nicio asociație pentru care poți edita permisiuni.",
     "roleTitle": "Permisiuni — {role}",
     "roleSubtitle": "Aceste permisiuni sunt valabile doar pentru asociația {association}.",
     "group_association": "Asociație",

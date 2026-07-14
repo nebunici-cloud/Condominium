@@ -20,22 +20,21 @@ const ROLE_CODES = [
 export default async function RolePermissionsPage({
   params,
 }: {
-  params: Promise<{ id: string; roleCode: string }>;
+  params: Promise<{ associationId: string; roleCode: string }>;
 }) {
-  const { id, roleCode } = await params;
+  const { associationId, roleCode } = await params;
   if (!ROLE_CODES.includes(roleCode as (typeof ROLE_CODES)[number])) {
     notFound();
   }
 
   const t = await getTranslations("permissions");
   const tRoles = await getTranslations("roles");
-  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: association } = await supabase
     .from("associations")
     .select("id, tenant_id, name")
-    .eq("id", id)
+    .eq("id", associationId)
     .maybeSingle();
 
   if (!association) {
@@ -73,12 +72,11 @@ export default async function RolePermissionsPage({
   const roleLabel = tRoles.has(role.code) ? tRoles(role.code) : role.name;
 
   return (
-    <main className="mx-auto max-w-2xl p-4 sm:p-8">
+    <>
       <Breadcrumbs
         items={[
-          { label: tAssociations("title"), href: "/associations" },
-          { label: association.name, href: `/associations/${association.id}` },
-          { label: t("pageTitle"), href: `/associations/${association.id}/permissions` },
+          { label: t("pageTitle"), href: "/settings/team/permissions" },
+          { label: association.name, href: `/settings/team/permissions/${association.id}` },
           { label: roleLabel },
         ]}
       />
@@ -96,6 +94,6 @@ export default async function RolePermissionsPage({
         associationId={association.id}
         groups={groups}
       />
-    </main>
+    </>
   );
 }

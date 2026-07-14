@@ -3,8 +3,10 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserCapabilities } from "@/lib/capabilities";
 import { embedOne } from "@/lib/embed";
+import { Link } from "@/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -21,6 +23,7 @@ import { revokeInvite } from "./actions";
 export default async function RolesPage() {
   const t = await getTranslations("roles");
   const tCommon = await getTranslations("common");
+  const tPermissions = await getTranslations("permissions");
   const supabase = await createClient();
 
   const {
@@ -120,9 +123,16 @@ export default async function RolesPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        {capabilities.includes("core.role.manage") && (
+          <Button variant="outline" asChild>
+            <Link href="/settings/team/permissions">{tPermissions("pageTitle")}</Link>
+          </Button>
+        )}
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">{t("associationScopedHint")}</p>

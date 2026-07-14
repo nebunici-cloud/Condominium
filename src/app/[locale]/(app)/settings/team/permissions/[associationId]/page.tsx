@@ -19,18 +19,17 @@ const ROLE_CODES = [
 export default async function AssociationPermissionsPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ associationId: string }>;
 }) {
-  const { id } = await params;
+  const { associationId } = await params;
   const t = await getTranslations("permissions");
   const tRoles = await getTranslations("roles");
-  const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: association } = await supabase
     .from("associations")
     .select("id, name")
-    .eq("id", id)
+    .eq("id", associationId)
     .maybeSingle();
 
   if (!association) {
@@ -43,17 +42,16 @@ export default async function AssociationPermissionsPage({
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-4 sm:p-8">
+    <>
       <Breadcrumbs
         items={[
-          { label: tAssociations("title"), href: "/associations" },
-          { label: association.name, href: `/associations/${association.id}` },
-          { label: t("pageTitle") },
+          { label: t("pageTitle"), href: "/settings/team/permissions" },
+          { label: association.name },
         ]}
       />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">{t("pageTitle")}</h1>
+        <h1 className="text-2xl font-semibold">{association.name}</h1>
         <p className="text-sm text-muted-foreground">
           {t("pageSubtitle", { association: association.name })}
         </p>
@@ -63,7 +61,7 @@ export default async function AssociationPermissionsPage({
         {ROLE_CODES.map((code) => (
           <Link
             key={code}
-            href={`/associations/${association.id}/permissions/${code}`}
+            href={`/settings/team/permissions/${association.id}/${code}`}
             className="flex items-center justify-between rounded-md border p-4 hover:bg-accent"
           >
             <span className="font-medium">{tRoles.has(code) ? tRoles(code) : code}</span>
@@ -71,6 +69,6 @@ export default async function AssociationPermissionsPage({
           </Link>
         ))}
       </div>
-    </main>
+    </>
   );
 }

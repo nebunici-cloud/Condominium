@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { capabilityLabelKey } from "@/lib/permission-groups";
 
-import { toggleAssociationCapability } from "../actions";
+import { toggleAssociationCapability } from "../../actions";
 
 type CapabilityRow = { code: string; checked: boolean };
 type CapabilityGroup = { group: string; items: CapabilityRow[] };
