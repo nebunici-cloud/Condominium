@@ -148,7 +148,9 @@
     "errorDuplicateInFile": "Дубликат в файле",
     "errorDuplicateInBuilding": "Квартира с таким номером уже существует",
     "errorInvalidNumber": "Некорректное числовое значение",
-    "residentCountColumnLabel": "Число жильцов"
+    "residentCountColumnLabel": "Число жильцов",
+    "residentCountAutoPlaceholder": "Автоматически: {count} (по Жильцам)",
+    "residentCountAutoHint": "Оставьте поле пустым, чтобы число рассчитывалось автоматически по Жильцам, добавленным в эту квартиру. Введите число, чтобы задать его вручную."
   },
   "owners": {
     "title": "Собственники",

@@ -148,7 +148,9 @@
     "errorDuplicateInFile": "Duplicat în fișier",
     "errorDuplicateInBuilding": "Există deja un apartament cu acest număr",
     "errorInvalidNumber": "Valoare numerică invalidă",
-    "residentCountColumnLabel": "Nr. persoane"
+    "residentCountColumnLabel": "Nr. persoane",
+    "residentCountAutoPlaceholder": "Automat: {count} (din Locatari)",
+    "residentCountAutoHint": "Lasă gol pentru a calcula automat din Locatarii adăugați acestui apartament. Scrie un număr pentru a-l stabili manual."
   },
   "owners": {
     "title": "Proprietari",

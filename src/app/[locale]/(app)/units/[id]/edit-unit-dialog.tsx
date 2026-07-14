@@ -52,10 +52,15 @@ export function EditUnitDialog({
   unitId,
   defaultValues,
   meterTypeOptions,
+  autoResidentCount,
 }: {
   unitId: string;
   defaultValues: FormValues;
   meterTypeOptions: string[];
+  // null when the unit's resident count is a manual override (already
+  // pre-filled in defaultValues); otherwise the current auto-computed
+  // count, shown as a hint since the field itself is left blank.
+  autoResidentCount: number | null;
 }) {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
@@ -175,8 +180,16 @@ export function EditUnitDialog({
                   <FormItem>
                     <FormLabel>{t("residentCountLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t("residentCountPlaceholder")} {...field} />
+                      <Input
+                        placeholder={
+                          autoResidentCount === null
+                            ? t("residentCountPlaceholder")
+                            : t("residentCountAutoPlaceholder", { count: autoResidentCount })
+                        }
+                        {...field}
+                      />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground">{t("residentCountAutoHint")}</p>
                     <FormMessage />
                   </FormItem>
                 )}

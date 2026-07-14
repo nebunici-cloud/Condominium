@@ -35,7 +35,11 @@ export async function createUnit(input: z.infer<typeof unitSchema>) {
     ownership_share_percent: Number.isFinite(parsed.ownershipSharePercent)
       ? parsed.ownershipSharePercent
       : null,
+    // A blank field means "start in auto mode, follow Locatari" --
+    // resident_count stays null until the first occupancy change (or
+    // a manual edit) sets it, same as any other unit.
     resident_count: Number.isFinite(parsed.residentCount) ? parsed.residentCount : null,
+    resident_count_is_manual: Number.isFinite(parsed.residentCount),
     meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
   });
 
@@ -61,6 +65,13 @@ export async function updateUnit(input: z.infer<typeof updateUnitSchema>) {
   const parsed = updateUnitSchema.parse(input);
   const supabase = await createClient();
 
+  // Typing a number locks resident_count as a manual override.
+  // Clearing the field switches the unit back to auto -- and, unlike
+  // the trigger that keeps auto units in sync as occupancies change,
+  // this needs an explicit recompute so the number is right away
+  // rather than stale until the next occupancy event.
+  const residentCountIsManual = Number.isFinite(parsed.residentCount);
+
   const { error } = await supabase
     .from("units")
     .update({
@@ -70,13 +81,19 @@ export async function updateUnit(input: z.infer<typeof updateUnitSchema>) {
       ownership_share_percent: Number.isFinite(parsed.ownershipSharePercent)
         ? parsed.ownershipSharePercent
         : null,
-      resident_count: Number.isFinite(parsed.residentCount) ? parsed.residentCount : null,
+      ...(residentCountIsManual
+        ? { resident_count: parsed.residentCount, resident_count_is_manual: true }
+        : { resident_count_is_manual: false }),
       meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
     })
     .eq("id", parsed.id);
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (!residentCountIsManual) {
+    await supabase.rpc("recompute_unit_resident_count", { p_unit_id: parsed.id });
   }
 
   revalidatePath("/", "layout");

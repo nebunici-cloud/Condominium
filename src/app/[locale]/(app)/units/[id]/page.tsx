@@ -48,7 +48,7 @@ export default async function UnitDetailPage({
   const { data: unit } = await supabase
     .from("units")
     .select(
-      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, meters, building_id, buildings(name, association_id, associations(name))"
+      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, resident_count_is_manual, meters, building_id, buildings(name, association_id, associations(name))"
     )
     .eq("id", id)
     .maybeSingle();
@@ -166,12 +166,17 @@ export default async function UnitDetailPage({
         {capabilities.includes("core.unit.update") && (
           <EditUnitDialog
             unitId={unit.id}
+            // Only pre-fill resident count when it's a manual override --
+            // leaving it blank in auto mode means re-saving the form
+            // without touching this field can't accidentally lock in
+            // whatever number happened to be auto-computed at the time.
+            autoResidentCount={unit.resident_count_is_manual ? null : (unit.resident_count ?? 0)}
             defaultValues={{
               unitNumber: unit.unit_number,
               floor: unit.floor?.toString() ?? "",
               areaSqm: unit.area_sqm?.toString() ?? "",
               ownershipSharePercent: unit.ownership_share_percent?.toString() ?? "",
-              residentCount: unit.resident_count?.toString() ?? "",
+              residentCount: unit.resident_count_is_manual ? (unit.resident_count?.toString() ?? "") : "",
               meters: unitMeters,
             }}
             meterTypeOptions={meterTypeOptions}
