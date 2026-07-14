@@ -13,6 +13,7 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -135,6 +136,7 @@ export function GenerateInvoicesDialog({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("generate")}</DialogTitle>
+          <DialogDescription>{t("generateDraftHint")}</DialogDescription>
         </DialogHeader>
 
         {feeTypes.length === 0 ? (

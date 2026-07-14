@@ -17,9 +17,11 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
-import { cancelInvoice, getBillingDefaults } from "./actions";
+import { PublishDraftsButton } from "./publish-drafts-button";
+import { cancelInvoice, publishInvoice, getBillingDefaults } from "./actions";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  draft: "secondary",
   issued: "outline",
   partially_paid: "secondary",
   paid: "default",
@@ -27,6 +29,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 };
 
 const statusLabelKeys: Record<string, string> = {
+  draft: "statusDraft",
   issued: "statusIssued",
   partially_paid: "statusPartiallyPaid",
   paid: "statusPaid",
@@ -57,8 +60,11 @@ export default async function BuildingInvoicesPage({
 
   const context = await getCurrentCapabilities(supabase, building.association_id);
   const capabilities = context?.capabilities ?? [];
-  const canCancel =
-    capabilities.includes("finance.invoice.generate") && capabilities.includes("finance.payment.record");
+  const canPublish = capabilities.includes("finance.invoice.publish");
+  // Matches the invoices_update RLS policy exactly: either capability
+  // is enough to discard a draft or cancel an issued invoice.
+  const canDiscard =
+    capabilities.includes("finance.payment.record") || capabilities.includes("finance.invoice.publish");
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
 
@@ -76,6 +82,8 @@ export default async function BuildingInvoicesPage({
       .order("billing_period_start", { ascending: false }),
     getBillingDefaults(supabase, id),
   ]);
+
+  const draftInvoiceIds = (invoices ?? []).filter((i) => i.status === "draft").map((i) => i.id);
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
@@ -95,15 +103,20 @@ export default async function BuildingInvoicesPage({
             {t("subtitle", { building: building.name })}
           </p>
         </div>
-        {capabilities.includes("finance.invoice.generate") && (
-          <GenerateInvoicesDialog
-            buildingId={building.id}
-            feeTypes={feeTypes ?? []}
-            defaultPeriodStart={billingDefaults.defaultPeriodStart}
-            defaultPeriodEnd={billingDefaults.defaultPeriodEnd}
-            suggestedAmounts={billingDefaults.suggestedAmounts}
-          />
-        )}
+        <div className="flex flex-wrap gap-2">
+          {canPublish && draftInvoiceIds.length > 0 && (
+            <PublishDraftsButton invoiceIds={draftInvoiceIds} />
+          )}
+          {capabilities.includes("finance.invoice.generate") && (
+            <GenerateInvoicesDialog
+              buildingId={building.id}
+              feeTypes={feeTypes ?? []}
+              defaultPeriodStart={billingDefaults.defaultPeriodStart}
+              defaultPeriodEnd={billingDefaults.defaultPeriodEnd}
+              suggestedAmounts={billingDefaults.suggestedAmounts}
+            />
+          )}
+        </div>
       </div>
 
       {!invoices || invoices.length === 0 ? (
@@ -134,18 +147,46 @@ export default async function BuildingInvoicesPage({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {canCancel && (invoice.status === "issued" || invoice.status === "partially_paid") && (
-                      <EndEffectiveDatedButton
-                        id={invoice.id}
-                        action={cancelInvoice}
-                        triggerLabel={t("cancelInvoice")}
-                        confirmTitle={t("cancelInvoice")}
-                        confirmDescription={t("cancelInvoiceConfirm")}
-                        successMessage={t("cancelSuccess")}
-                        cancelLabel={tCommon("cancel")}
-                        confirmLabel={tCommon("confirm")}
-                      />
-                    )}
+                    <div className="flex items-center justify-end gap-1">
+                      {canPublish && invoice.status === "draft" && (
+                        <EndEffectiveDatedButton
+                          id={invoice.id}
+                          action={publishInvoice}
+                          triggerLabel={t("publish")}
+                          confirmTitle={t("publish")}
+                          confirmDescription={t("publishConfirm")}
+                          successMessage={t("publishSuccess")}
+                          cancelLabel={tCommon("cancel")}
+                          confirmLabel={tCommon("confirm")}
+                          confirmVariant="default"
+                        />
+                      )}
+                      {canDiscard &&
+                        (invoice.status === "draft" ||
+                          invoice.status === "issued" ||
+                          invoice.status === "partially_paid") && (
+                          <EndEffectiveDatedButton
+                            id={invoice.id}
+                            action={cancelInvoice}
+                            triggerLabel={
+                              invoice.status === "draft" ? t("discardDraft") : t("cancelInvoice")
+                            }
+                            confirmTitle={
+                              invoice.status === "draft" ? t("discardDraft") : t("cancelInvoice")
+                            }
+                            confirmDescription={
+                              invoice.status === "draft"
+                                ? t("discardDraftConfirm")
+                                : t("cancelInvoiceConfirm")
+                            }
+                            successMessage={
+                              invoice.status === "draft" ? t("discardDraftSuccess") : t("cancelSuccess")
+                            }
+                            cancelLabel={tCommon("cancel")}
+                            confirmLabel={tCommon("confirm")}
+                          />
+                        )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

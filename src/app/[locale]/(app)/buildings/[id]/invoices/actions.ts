@@ -397,3 +397,43 @@ export async function cancelInvoice(invoiceId: string) {
   revalidatePath("/", "layout");
   return { error: null };
 }
+
+// Generated invoices land in draft (see the invoices.status default)
+// and stay invisible to anyone without generate-or-publish rights
+// until this runs -- the actual review step. .eq("status", "draft")
+// means calling this twice, or on something already published, is a
+// harmless no-op rather than an error.
+export async function publishInvoice(invoiceId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("invoices")
+    .update({ status: "issued" })
+    .eq("id", invoiceId)
+    .eq("status", "draft");
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}
+
+export async function publishDraftInvoices(invoiceIds: string[]) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("invoices")
+    .update({ status: "issued" })
+    .in("id", invoiceIds)
+    .eq("status", "draft")
+    .select("id");
+
+  if (error) {
+    return { error: error.message, published: 0 };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null, published: data?.length ?? 0 };
+}

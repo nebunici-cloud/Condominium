@@ -113,8 +113,10 @@ export default async function UnitDetailPage({
 
   const outstandingBalance = computeOutstandingBalance({
     openingBalance: openingBalance?.amount ?? 0,
+    // Drafts aren't real yet -- nothing is owed on an invoice nobody
+    // has published.
     invoiceTotal: (allInvoices ?? [])
-      .filter((i) => i.status !== "cancelled")
+      .filter((i) => i.status !== "cancelled" && i.status !== "draft")
       .reduce((sum, i) => sum + i.total_amount, 0),
     paymentTotal: (payments ?? []).reduce((sum, p) => sum + p.amount, 0),
   });

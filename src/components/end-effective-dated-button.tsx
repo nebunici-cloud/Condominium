@@ -23,6 +23,7 @@ export function EndEffectiveDatedButton({
   successMessage,
   cancelLabel,
   confirmLabel,
+  confirmVariant = "destructive",
 }: {
   id: string;
   action: (id: string) => Promise<{ error: string | null }>;
@@ -32,6 +33,10 @@ export function EndEffectiveDatedButton({
   successMessage: string;
   cancelLabel: string;
   confirmLabel: string;
+  // Most uses of this button end something (ownership, an invoice);
+  // publish is the one forward/positive action that reuses the same
+  // id+action+confirm-dialog shape, so it needs non-destructive styling.
+  confirmVariant?: "destructive" | "default";
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +71,7 @@ export function EndEffectiveDatedButton({
           <Button variant="outline" onClick={() => setOpen(false)}>
             {cancelLabel}
           </Button>
-          <Button variant="destructive" disabled={submitting} onClick={handleConfirm}>
+          <Button variant={confirmVariant} disabled={submitting} onClick={handleConfirm}>
             {confirmLabel}
           </Button>
         </DialogFooter>
