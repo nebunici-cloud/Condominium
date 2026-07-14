@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, PencilIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -47,16 +47,24 @@ export function GenerateInvoicesDialog({
   defaultPeriodStart,
   defaultPeriodEnd,
   suggestedAmounts,
+  mode = "create",
 }: {
   buildingId: string;
   feeTypes: FeeType[];
   defaultPeriodStart: string;
   defaultPeriodEnd: string;
   suggestedAmounts: Record<string, number>;
+  // "edit" re-opens an existing draft batch: the period is locked (it
+  // already occupies that period, nothing to pick), suggestedAmounts
+  // are that batch's own current amounts rather than "last period",
+  // and confirming replaces the draft in place instead of creating a
+  // new one alongside it.
+  mode?: "create" | "edit";
 }) {
   const t = useTranslations("invoices");
   const tFinance = useTranslations("financeSetup");
   const tCommon = useTranslations("common");
+  const isEdit = mode === "edit";
 
   function defaultSelection(): Selection {
     return Object.fromEntries(
@@ -91,7 +99,7 @@ export function GenerateInvoicesDialog({
     const feeTypeInputs = Object.entries(selection)
       .filter(([, v]) => v.selected && v.amount)
       .map(([feeTypeId, v]) => ({ feeTypeId, totalAmount: Number(v.amount) }));
-    return { buildingId, periodStart, periodEnd, feeTypeInputs };
+    return { buildingId, periodStart, periodEnd, feeTypeInputs, isEdit };
   }
 
   async function handlePreview() {
@@ -111,7 +119,7 @@ export function GenerateInvoicesDialog({
       return;
     }
 
-    toast.success(t("generateSuccess", { count: result.invoiced }));
+    toast.success(isEdit ? t("editDraftSuccess") : t("generateSuccess", { count: result.invoiced }));
     reset();
     setOpen(false);
   }
@@ -128,15 +136,22 @@ export function GenerateInvoicesDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button>
-          <PlusIcon />
-          {t("generate")}
-        </Button>
+        {isEdit ? (
+          <Button size="sm" variant="outline">
+            <PencilIcon />
+            {t("editDraft")}
+          </Button>
+        ) : (
+          <Button>
+            <PlusIcon />
+            {t("generate")}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{t("generate")}</DialogTitle>
-          <DialogDescription>{t("generateDraftHint")}</DialogDescription>
+          <DialogTitle>{isEdit ? t("editDraft") : t("generate")}</DialogTitle>
+          <DialogDescription>{isEdit ? t("editDraftHint") : t("generateDraftHint")}</DialogDescription>
         </DialogHeader>
 
         {feeTypes.length === 0 ? (
@@ -149,6 +164,7 @@ export function GenerateInvoicesDialog({
                 <Input
                   type="date"
                   value={periodStart}
+                  disabled={isEdit}
                   onChange={(e) => {
                     setPeriodStart(e.target.value);
                     setPreview(null);
@@ -160,6 +176,7 @@ export function GenerateInvoicesDialog({
                 <Input
                   type="date"
                   value={periodEnd}
+                  disabled={isEdit}
                   onChange={(e) => {
                     setPeriodEnd(e.target.value);
                     setPreview(null);
@@ -283,11 +300,13 @@ export function GenerateInvoicesDialog({
                   </Button>
                   <Button
                     onClick={handleConfirm}
-                    disabled={confirming || preview.willInvoiceCount === 0}
+                    disabled={confirming || (preview.willInvoiceCount === 0 && !isEdit)}
                   >
                     {confirming
                       ? t("confirming")
-                      : t("confirm", { count: preview.willInvoiceCount })}
+                      : isEdit
+                        ? t("confirmEdit")
+                        : t("confirm", { count: preview.willInvoiceCount })}
                   </Button>
                 </>
               )}

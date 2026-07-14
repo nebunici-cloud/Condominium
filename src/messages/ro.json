@@ -463,7 +463,11 @@
     "discardDraft": "Renunță la ciornă",
     "discardDraftConfirm": "Ești sigur? Această factură ciornă va fi anulată și perioada va rămâne liberă pentru o nouă generare.",
     "discardDraftSuccess": "Ciorna a fost anulată.",
-    "generateDraftHint": "Facturile create acum vor fi ciorne — nu vor fi vizibile sau plătibile până când nu le publici, din pagina de facturi."
+    "generateDraftHint": "Facturile create acum vor fi ciorne — nu vor fi vizibile sau plătibile până când nu le publici, din pagina de facturi.",
+    "editDraft": "Editează ciorna",
+    "editDraftHint": "Perioada este fixă (aceasta este deja perioada ciornei). Ajustează sumele sau categoriile și confirmă pentru a înlocui ciorna existentă.",
+    "editDraftSuccess": "Ciorna a fost actualizată.",
+    "confirmEdit": "Salvează modificările"
   },
   "payments": {
     "title": "Plăți",

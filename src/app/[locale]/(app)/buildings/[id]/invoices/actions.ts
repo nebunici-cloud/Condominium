@@ -21,6 +21,14 @@ const requestSchema = z.object({
   periodStart: z.string(),
   periodEnd: z.string(),
   feeTypeInputs: z.array(feeTypeInputSchema).min(1),
+  // Editing an existing draft batch re-submits the same period it
+  // already occupies -- without this, that period's own draft
+  // invoices would count as "already invoiced" and block themselves.
+  // Never lets a batch skip past an issued/paid invoice: only draft
+  // status is treated as non-blocking, and commit_invoice_batch's own
+  // DELETE is separately hard-scoped to status = 'draft' regardless
+  // of what this flag says.
+  isEdit: z.boolean().optional().default(false),
 });
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -43,6 +51,38 @@ function startOfMonth(dateStr: string): string {
 function endOfMonth(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00Z");
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+}
+
+async function sumInvoiceLinesForPeriod(
+  supabase: SupabaseClient,
+  unitIds: string[],
+  periodStart: string,
+  periodEnd: string
+): Promise<Record<string, number>> {
+  const amounts: Record<string, number> = {};
+  if (unitIds.length === 0) return amounts;
+
+  const { data: periodInvoices } = await supabase
+    .from("invoices")
+    .select("id")
+    .in("unit_id", unitIds)
+    .eq("billing_period_start", periodStart)
+    .eq("billing_period_end", periodEnd)
+    .neq("status", "cancelled");
+
+  const invoiceIds = (periodInvoices ?? []).map((i) => i.id);
+  if (invoiceIds.length === 0) return amounts;
+
+  const { data: lines } = await supabase
+    .from("invoice_lines")
+    .select("fee_type_id, amount")
+    .in("invoice_id", invoiceIds);
+
+  for (const line of lines ?? []) {
+    amounts[line.fee_type_id] = round2((amounts[line.fee_type_id] ?? 0) + line.amount);
+  }
+
+  return amounts;
 }
 
 // Removes two of the most common ways to fat-finger a billing run:
@@ -85,29 +125,28 @@ export async function getBillingDefaults(
   const defaultPeriodStart = addDays(lastInvoice.billing_period_end, 1);
   const defaultPeriodEnd = endOfMonth(defaultPeriodStart);
 
-  const { data: periodInvoices } = await supabase
-    .from("invoices")
-    .select("id")
-    .in("unit_id", unitIds)
-    .eq("billing_period_start", lastInvoice.billing_period_start)
-    .eq("billing_period_end", lastInvoice.billing_period_end)
-    .neq("status", "cancelled");
-
-  const invoiceIds = (periodInvoices ?? []).map((i) => i.id);
-  const suggestedAmounts: Record<string, number> = {};
-
-  if (invoiceIds.length > 0) {
-    const { data: lines } = await supabase
-      .from("invoice_lines")
-      .select("fee_type_id, amount")
-      .in("invoice_id", invoiceIds);
-
-    for (const line of lines ?? []) {
-      suggestedAmounts[line.fee_type_id] = round2((suggestedAmounts[line.fee_type_id] ?? 0) + line.amount);
-    }
-  }
+  const suggestedAmounts = await sumInvoiceLinesForPeriod(
+    supabase,
+    unitIds,
+    lastInvoice.billing_period_start,
+    lastInvoice.billing_period_end
+  );
 
   return { defaultPeriodStart, defaultPeriodEnd, suggestedAmounts };
+}
+
+// Same idea as getBillingDefaults, but for a *known* existing period
+// rather than "whatever's most recent" -- this is what pre-fills the
+// edit dialog for a draft batch with the amounts it currently holds.
+export async function getDraftBatchAmounts(
+  supabase: SupabaseClient,
+  buildingId: string,
+  periodStart: string,
+  periodEnd: string
+): Promise<Record<string, number>> {
+  const { data: units } = await supabase.from("units").select("id").eq("building_id", buildingId);
+  const unitIds = (units ?? []).map((u) => u.id);
+  return sumInvoiceLinesForPeriod(supabase, unitIds, periodStart, periodEnd);
 }
 
 async function computeInvoiceLines(
@@ -115,7 +154,8 @@ async function computeInvoiceLines(
   buildingId: string,
   periodStart: string,
   periodEnd: string,
-  feeTypeInputs: { feeTypeId: string; totalAmount: number }[]
+  feeTypeInputs: { feeTypeId: string; totalAmount: number }[],
+  isEdit = false
 ) {
   const { data: units } = await supabase
     .from("units")
@@ -134,13 +174,21 @@ async function computeInvoiceLines(
   // database enforces this as a hard constraint (see
   // invoices_no_overlapping_periods), this is what lets the UI warn
   // about it up front instead of the whole batch failing on insert.
-  const { data: existingInvoices } = await supabase
+  // When editing an existing draft batch, its own draft rows for this
+  // exact period shouldn't count as a block -- commit_invoice_batch is
+  // about to replace them, and the exclude constraint guarantees no
+  // *other* draft could exist for an overlapping range anyway.
+  let existingInvoicesQuery = supabase
     .from("invoices")
     .select("unit_id")
     .in("unit_id", unitAttrs.map((u) => u.unitId))
     .neq("status", "cancelled")
     .lte("billing_period_start", periodEnd)
     .gte("billing_period_end", periodStart);
+  if (isEdit) {
+    existingInvoicesQuery = existingInvoicesQuery.neq("status", "draft");
+  }
+  const { data: existingInvoices } = await existingInvoicesQuery;
   const alreadyInvoicedUnitIds = new Set((existingInvoices ?? []).map((i) => i.unit_id));
 
   const perFeeType: {
@@ -257,7 +305,8 @@ export async function previewInvoiceGeneration(input: z.infer<typeof requestSche
     parsed.buildingId,
     parsed.periodStart,
     parsed.periodEnd,
-    parsed.feeTypeInputs
+    parsed.feeTypeInputs,
+    parsed.isEdit
   );
 
   const totalsByUnit = new Map<string, number>();
@@ -307,7 +356,8 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
     parsed.buildingId,
     parsed.periodStart,
     parsed.periodEnd,
-    parsed.feeTypeInputs
+    parsed.feeTypeInputs,
+    parsed.isEdit
   );
 
   const totalsByUnit = new Map<string, number>();
@@ -323,6 +373,20 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
   );
 
   if (unitsToInvoice.length === 0) {
+    // Editing a batch down to nothing (every fee type unchecked)
+    // should still clear out the stale draft it's replacing, not
+    // leave it sitting there untouched.
+    if (parsed.isEdit) {
+      const { error } = await supabase.rpc("commit_invoice_batch", {
+        p_building_id: parsed.buildingId,
+        p_period_start: parsed.periodStart,
+        p_period_end: parsed.periodEnd,
+        p_invoices: [],
+        p_lines: [],
+      });
+      if (error) return { error: error.message, invoiced: 0 };
+      revalidatePath("/", "layout");
+    }
     return { error: null, invoiced: 0 };
   }
 
@@ -360,8 +424,14 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
   // One RPC call = one transaction: either every invoice and line in
   // this run is created, or (a constraint violation, a dropped
   // connection mid-batch) none of it is -- no more half-generated
-  // periods to clean up by hand.
+  // periods to clean up by hand. It also clears out any existing
+  // draft for this exact building+period first, which is what makes
+  // editing a draft batch (isEdit) work: same period, corrected
+  // inputs, replaces rather than collides.
   const { data: invoiced, error } = await supabase.rpc("commit_invoice_batch", {
+    p_building_id: parsed.buildingId,
+    p_period_start: parsed.periodStart,
+    p_period_end: parsed.periodEnd,
     p_invoices: invoiceRows,
     p_lines: lineRows,
   });

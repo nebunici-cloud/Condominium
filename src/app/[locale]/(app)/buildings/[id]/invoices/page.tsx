@@ -18,7 +18,7 @@ import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 import { PublishDraftsButton } from "./publish-drafts-button";
-import { cancelInvoice, publishInvoice, getBillingDefaults } from "./actions";
+import { cancelInvoice, publishInvoice, getBillingDefaults, getDraftBatchAmounts } from "./actions";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "secondary",
@@ -83,7 +83,18 @@ export default async function BuildingInvoicesPage({
     getBillingDefaults(supabase, id),
   ]);
 
-  const draftInvoiceIds = (invoices ?? []).filter((i) => i.status === "draft").map((i) => i.id);
+  const draftInvoices = (invoices ?? []).filter((i) => i.status === "draft");
+  const draftInvoiceIds = draftInvoices.map((i) => i.id);
+  // Editing operates on the whole batch (a period's worth of draft
+  // invoices), not one row -- there's only ever one draft period in
+  // flight for a building in practice, since the exclude constraint
+  // means a unit can't hold two overlapping drafts at once.
+  const draftPeriod = draftInvoices[0]
+    ? { start: draftInvoices[0].billing_period_start, end: draftInvoices[0].billing_period_end }
+    : null;
+  const draftAmounts = draftPeriod
+    ? await getDraftBatchAmounts(supabase, id, draftPeriod.start, draftPeriod.end)
+    : {};
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
@@ -103,7 +114,17 @@ export default async function BuildingInvoicesPage({
             {t("subtitle", { building: building.name })}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {capabilities.includes("finance.invoice.generate") && draftPeriod && (
+            <GenerateInvoicesDialog
+              buildingId={building.id}
+              feeTypes={feeTypes ?? []}
+              defaultPeriodStart={draftPeriod.start}
+              defaultPeriodEnd={draftPeriod.end}
+              suggestedAmounts={draftAmounts}
+              mode="edit"
+            />
+          )}
           {canPublish && draftInvoiceIds.length > 0 && (
             <PublishDraftsButton invoiceIds={draftInvoiceIds} />
           )}
