@@ -128,7 +128,7 @@
     "shareSumOk": "Suma cotelor-părți din acest bloc este 100%.",
     "viewDetails": "Vezi detalii",
     "owners": "Proprietari",
-    "occupants": "Chiriași / ocupanți",
+    "occupants": "Locatari",
     "importTitle": "Import din Excel",
     "downloadTemplate": "Descarcă șablon",
     "importFileLabel": "Fișier Excel (.xlsx)",
@@ -147,7 +147,8 @@
     "errorMissingUnitNumber": "Numărul apartamentului lipsește",
     "errorDuplicateInFile": "Duplicat în fișier",
     "errorDuplicateInBuilding": "Există deja un apartament cu acest număr",
-    "errorInvalidNumber": "Valoare numerică invalidă"
+    "errorInvalidNumber": "Valoare numerică invalidă",
+    "residentCountColumnLabel": "Nr. persoane"
   },
   "owners": {
     "title": "Proprietari",
@@ -215,7 +216,7 @@
     "ownerLivesHereSuccess": "Proprietarul a fost adăugat și ca ocupant al apartamentului."
   },
   "occupancies": {
-    "title": "Chiriași / ocupanți",
+    "title": "Locatari",
     "newOccupancy": "Adaugă ocupant",
     "fullNameLabel": "Nume complet",
     "fullNamePlaceholder": "ex: Maria Ionescu",
@@ -314,7 +315,7 @@
     "group_building": "Blocuri",
     "group_unit": "Apartamente",
     "group_ownership": "Proprietari",
-    "group_occupancy": "Chiriași / ocupanți",
+    "group_occupancy": "Locatari",
     "group_config": "Configurare",
     "group_feeType": "Tipuri de taxe",
     "group_allocationRule": "Metode de alocare",

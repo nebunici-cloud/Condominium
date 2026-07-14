@@ -50,7 +50,7 @@ export default async function BuildingDetailPage({
 
   const { data: units } = await supabase
     .from("units")
-    .select("id, unit_number, floor, area_sqm, ownership_share_percent, meters")
+    .select("id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, meters")
     .eq("building_id", id)
     .order("unit_number", { ascending: true });
 
@@ -98,6 +98,9 @@ export default async function BuildingDetailPage({
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("subtitle", { building: building.name })}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {tBuildings("unitsCount", { count: units?.length ?? 0 })}
           </p>
           {units && units.length > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
@@ -162,6 +165,7 @@ export default async function BuildingDetailPage({
                 <TableHead>{t("floorLabel")}</TableHead>
                 <TableHead>{t("areaLabel")}</TableHead>
                 <TableHead>{t("shareLabel")}</TableHead>
+                <TableHead>{t("residentCountColumnLabel")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -172,6 +176,7 @@ export default async function BuildingDetailPage({
                   <TableCell>{unit.floor ?? "—"}</TableCell>
                   <TableCell>{unit.area_sqm ?? "—"}</TableCell>
                   <TableCell>{unit.ownership_share_percent ?? "—"}</TableCell>
+                  <TableCell>{unit.resident_count ?? "—"}</TableCell>
                   <TableCell>
                     <Link href={`/units/${unit.id}`} className="absolute inset-0">
                       <span className="sr-only">{t("viewDetails")}</span>

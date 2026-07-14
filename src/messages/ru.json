@@ -128,7 +128,7 @@
     "shareSumOk": "Сумма долей собственности в этом доме равна 100%.",
     "viewDetails": "Подробнее",
     "owners": "Собственники",
-    "occupants": "Жильцы / арендаторы",
+    "occupants": "Жильцы",
     "importTitle": "Импорт из Excel",
     "downloadTemplate": "Скачать шаблон",
     "importFileLabel": "Файл Excel (.xlsx)",
@@ -147,7 +147,8 @@
     "errorMissingUnitNumber": "Отсутствует номер квартиры",
     "errorDuplicateInFile": "Дубликат в файле",
     "errorDuplicateInBuilding": "Квартира с таким номером уже существует",
-    "errorInvalidNumber": "Некорректное числовое значение"
+    "errorInvalidNumber": "Некорректное числовое значение",
+    "residentCountColumnLabel": "Число жильцов"
   },
   "owners": {
     "title": "Собственники",
@@ -215,7 +216,7 @@
     "ownerLivesHereSuccess": "Собственник также добавлен как жилец квартиры."
   },
   "occupancies": {
-    "title": "Жильцы / арендаторы",
+    "title": "Жильцы",
     "newOccupancy": "Добавить жильца",
     "fullNameLabel": "Полное имя",
     "fullNamePlaceholder": "напр.: Мария Ионеску",
@@ -314,7 +315,7 @@
     "group_building": "Дома",
     "group_unit": "Квартиры",
     "group_ownership": "Собственники",
-    "group_occupancy": "Жильцы / арендаторы",
+    "group_occupancy": "Жильцы",
     "group_config": "Настройки",
     "group_feeType": "Тарифы",
     "group_allocationRule": "Методы распределения",
