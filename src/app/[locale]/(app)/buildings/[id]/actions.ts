@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { normalizeMeterType } from "@/lib/meter-types";
 
 const meterSchema = z.object({
   type: z.string().trim().min(1),
@@ -35,7 +36,7 @@ export async function createUnit(input: z.infer<typeof unitSchema>) {
       ? parsed.ownershipSharePercent
       : null,
     resident_count: Number.isFinite(parsed.residentCount) ? parsed.residentCount : null,
-    meters: parsed.meters.map((m) => ({ type: m.type, meter_id: m.meterId })),
+    meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
   });
 
   if (error) {
@@ -70,7 +71,7 @@ export async function updateUnit(input: z.infer<typeof updateUnitSchema>) {
         ? parsed.ownershipSharePercent
         : null,
       resident_count: Number.isFinite(parsed.residentCount) ? parsed.residentCount : null,
-      meters: parsed.meters.map((m) => ({ type: m.type, meter_id: m.meterId })),
+      meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
     })
     .eq("id", parsed.id);
 

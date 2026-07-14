@@ -9,6 +9,7 @@ import {
   type AllocationMethod,
   type UnitAttributes,
 } from "@/lib/allocation-engine";
+import { normalizeMeterType } from "@/lib/meter-types";
 
 const feeTypeInputSchema = z.object({
   feeTypeId: z.string().uuid(),
@@ -92,7 +93,7 @@ async function computeInvoiceLines(
       meterDeltas = await computeMeterDeltas(
         supabase,
         unitAttrs.map((u) => u.unitId),
-        meterType ?? "",
+        meterType ? normalizeMeterType(meterType) : "",
         periodStart,
         periodEnd
       );

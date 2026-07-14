@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { normalizeMeterType } from "@/lib/meter-types";
 
 export type ParsedUnitRow = {
   rowNumber: number;
@@ -35,7 +36,7 @@ function parseMetersCell(value: ExcelJS.CellValue): { type: string; meterId: str
     .filter(Boolean)
     .map((part) => {
       const [type, meterId] = part.split(":").map((s) => s.trim());
-      return { type: type ?? "", meterId: meterId ?? "" };
+      return { type: type ? normalizeMeterType(type) : "", meterId: meterId ?? "" };
     })
     .filter((m) => m.type && m.meterId);
 }

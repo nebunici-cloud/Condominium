@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { normalizeMeterType } from "@/lib/meter-types";
 
 const methodSchema = z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter"]);
 
 function buildConfig(method: z.infer<typeof methodSchema>, meterType?: string) {
   if (method === "by_meter") {
-    return { meter_type: meterType?.trim() || "cold_water" };
+    return { meter_type: meterType?.trim() ? normalizeMeterType(meterType) : "cold_water" };
   }
   return {};
 }
