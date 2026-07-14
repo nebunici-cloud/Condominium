@@ -42,8 +42,6 @@ export default async function BuildingInvoicesPage({
   const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
-  const context = await getCurrentCapabilities(supabase);
-  const capabilities = context?.capabilities ?? [];
 
   const { data: building } = await supabase
     .from("buildings")
@@ -54,6 +52,9 @@ export default async function BuildingInvoicesPage({
   if (!building) {
     notFound();
   }
+
+  const context = await getCurrentCapabilities(supabase, building.association_id);
+  const capabilities = context?.capabilities ?? [];
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
 

@@ -34,8 +34,6 @@ export default async function BuildingDetailPage({
   const tBuildings = await getTranslations("buildings");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
-  const context = await getCurrentCapabilities(supabase);
-  const capabilities = context?.capabilities ?? [];
 
   const { data: building } = await supabase
     .from("buildings")
@@ -46,6 +44,9 @@ export default async function BuildingDetailPage({
   if (!building) {
     notFound();
   }
+
+  const context = await getCurrentCapabilities(supabase, building.association_id);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: units } = await supabase
     .from("units")

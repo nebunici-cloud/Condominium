@@ -34,8 +34,6 @@ export default async function FinanceSetupPage({
   const t = await getTranslations("financeSetup");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
-  const context = await getCurrentCapabilities(supabase);
-  const capabilities = context?.capabilities ?? [];
 
   const { data: association } = await supabase
     .from("associations")
@@ -46,6 +44,9 @@ export default async function FinanceSetupPage({
   if (!association) {
     notFound();
   }
+
+  const context = await getCurrentCapabilities(supabase, association.id);
+  const capabilities = context?.capabilities ?? [];
 
   const [{ data: suggestions }, { data: feeTypes }] = await Promise.all([
     supabase

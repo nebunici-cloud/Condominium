@@ -26,8 +26,6 @@ export default async function ConfigPage({
   const t = await getTranslations("config");
   const tCommon = await getTranslations("common");
   const supabase = await createClient();
-  const context = await getCurrentCapabilities(supabase);
-  const canManage = (context?.capabilities ?? []).includes("core.config.manage");
 
   const { data: associations } = await supabase
     .from("associations")
@@ -37,6 +35,9 @@ export default async function ConfigPage({
   const selected = associationParam
     ? associations?.find((a) => a.id === associationParam)
     : associations?.[0];
+
+  const context = await getCurrentCapabilities(supabase, selected?.id);
+  const canManage = (context?.capabilities ?? []).includes("core.config.manage");
 
   const { data: entries } = selected
     ? await supabase

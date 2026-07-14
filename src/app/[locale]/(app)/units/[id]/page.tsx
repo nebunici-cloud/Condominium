@@ -40,8 +40,6 @@ export default async function UnitDetailPage({
   const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
-  const context = await getCurrentCapabilities(supabase);
-  const capabilities = context?.capabilities ?? [];
 
   const { data: unit } = await supabase
     .from("units")
@@ -60,6 +58,9 @@ export default async function UnitDetailPage({
   const associationId = building?.association_id;
   const associationName = embedOne(building?.associations)?.name ?? tAssociations("title");
   const meterTypeOptions = associationId ? await getMeterTypeOptions(supabase, associationId) : [];
+
+  const context = await getCurrentCapabilities(supabase, associationId);
+  const capabilities = context?.capabilities ?? [];
 
   const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
     await Promise.all([

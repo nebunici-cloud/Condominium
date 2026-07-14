@@ -29,9 +29,8 @@ export default async function AssociationDetailPage({
   const tUnits = await getTranslations("units");
   const tFinance = await getTranslations("financeSetup");
   const tAssociations = await getTranslations("associations");
+  const tPermissions = await getTranslations("permissions");
   const supabase = await createClient();
-  const context = await getCurrentCapabilities(supabase);
-  const capabilities = context?.capabilities ?? [];
 
   const { data: association } = await supabase
     .from("associations")
@@ -42,6 +41,9 @@ export default async function AssociationDetailPage({
   if (!association) {
     notFound();
   }
+
+  const context = await getCurrentCapabilities(supabase, association.id);
+  const capabilities = context?.capabilities ?? [];
 
   const { data: buildings } = await supabase
     .from("buildings")
@@ -80,6 +82,13 @@ export default async function AssociationDetailPage({
             <Button variant="outline" asChild>
               <Link href={`/associations/${association.id}/finance-setup`}>
                 {tFinance("title")}
+              </Link>
+            </Button>
+          )}
+          {capabilities.includes("core.role.manage") && (
+            <Button variant="outline" asChild>
+              <Link href={`/associations/${association.id}/permissions`}>
+                {tPermissions("pageTitle")}
               </Link>
             </Button>
           )}

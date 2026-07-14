@@ -42,11 +42,32 @@ export default async function RolesPage() {
 
   const { data: roles } = await supabase
     .from("roles")
-    .select("id, code, name, role_capabilities(capabilities(code, description))")
+    .select("id, code, name")
     .order("created_at", { ascending: true });
 
   function roleLabel(role: { code: string; name: string }) {
     return t.has(role.code) ? t(role.code) : role.name;
+  }
+
+  // Only tenant-wide grants (association_id is null) show here --
+  // association-scoped capabilities now vary per association and are
+  // edited from within each association's own Permissions page.
+  const roleIds = (roles ?? []).map((role) => role.id);
+  const { data: tenantWideGrants } = roleIds.length
+    ? await supabase
+        .from("role_capabilities")
+        .select("role_id, capabilities(code, description)")
+        .in("role_id", roleIds)
+        .is("association_id", null)
+    : { data: [] };
+
+  const capabilitiesByRole = new Map<string, { code: string; description: string }[]>();
+  for (const row of tenantWideGrants ?? []) {
+    const capability = embedOne(row.capabilities);
+    if (!capability) continue;
+    const list = capabilitiesByRole.get(row.role_id) ?? [];
+    list.push(capability);
+    capabilitiesByRole.set(row.role_id, list);
   }
 
   const { data: tenantUserRows } = await supabase
@@ -104,14 +125,14 @@ export default async function RolesPage() {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
+      <p className="mb-4 text-sm text-muted-foreground">{t("associationScopedHint")}</p>
+
       {!roles || roles.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noCapabilities")}</p>
       ) : (
         <div className="grid gap-4">
           {roles.map((role) => {
-            const roleCapabilities = role.role_capabilities
-              .map((rc) => embedOne(rc.capabilities))
-              .filter((c): c is { code: string; description: string } => Boolean(c));
+            const roleCapabilities = capabilitiesByRole.get(role.id) ?? [];
 
             return (
               <Card key={role.id}>
@@ -123,11 +144,15 @@ export default async function RolesPage() {
                     {t("capabilities")} ({roleCapabilities.length})
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {roleCapabilities.map((capability) => (
-                      <Badge key={capability.code} variant="outline" title={capability.description}>
-                        {capability.code}
-                      </Badge>
-                    ))}
+                    {roleCapabilities.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      roleCapabilities.map((capability) => (
+                        <Badge key={capability.code} variant="outline" title={capability.description}>
+                          {capability.code}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
