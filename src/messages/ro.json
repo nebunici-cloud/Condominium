@@ -478,5 +478,18 @@
     "errorMissingDate": "Data plății lipsește",
     "errorInvalidNumber": "Valoare numerică invalidă",
     "errorInvalidDate": "Dată invalidă"
+  },
+  "meterReadings": {
+    "title": "Citiri contor",
+    "newReading": "Adaugă citire",
+    "meterLabel": "Contor",
+    "meterPlaceholder": "Selectează un contor",
+    "readingValueLabel": "Valoare citire",
+    "readingDateLabel": "Data citirii",
+    "lastReadingHint": "Ultima citire: {value} din {date}.",
+    "noMetersConfigured": "Acest apartament nu are contoare configurate. Adaugă unul din butonul Editează de mai sus.",
+    "noReadings": "Nicio citire înregistrată încă pentru acest apartament.",
+    "createSuccess": "Citirea a fost înregistrată.",
+    "createError": "Nu am putut înregistra citirea."
   }
 }

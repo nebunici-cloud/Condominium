@@ -478,5 +478,18 @@
     "errorMissingDate": "Отсутствует дата платежа",
     "errorInvalidNumber": "Некорректное числовое значение",
     "errorInvalidDate": "Некорректная дата"
+  },
+  "meterReadings": {
+    "title": "Показания счётчиков",
+    "newReading": "Добавить показание",
+    "meterLabel": "Счётчик",
+    "meterPlaceholder": "Выберите счётчик",
+    "readingValueLabel": "Значение показания",
+    "readingDateLabel": "Дата показания",
+    "lastReadingHint": "Последнее показание: {value} от {date}.",
+    "noMetersConfigured": "У этой квартиры нет настроенных счётчиков. Добавьте его через кнопку «Редактировать» выше.",
+    "noReadings": "Для этой квартиры пока не зарегистрировано ни одного показания.",
+    "createSuccess": "Показание зарегистрировано.",
+    "createError": "Не удалось зарегистрировать показание."
   }
 }

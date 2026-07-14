@@ -25,6 +25,7 @@ import { endOwnership, endOccupancy } from "./actions";
 import { RecordPaymentDialog } from "./record-payment-dialog";
 import { MatchPaymentButton } from "./match-payment-button";
 import { EditUnitDialog } from "./edit-unit-dialog";
+import { RecordMeterReadingDialog } from "./record-meter-reading-dialog";
 
 export default async function UnitDetailPage({
   params,
@@ -37,6 +38,7 @@ export default async function UnitDetailPage({
   const tOccupancies = await getTranslations("occupancies");
   const tPayments = await getTranslations("payments");
   const tInvoices = await getTranslations("invoices");
+  const tMeterReadings = await getTranslations("meterReadings");
   const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
@@ -62,8 +64,14 @@ export default async function UnitDetailPage({
   const context = await getCurrentCapabilities(supabase, associationId);
   const capabilities = context?.capabilities ?? [];
 
-  const [{ data: ownerships }, { data: occupancies }, { data: owners }, { data: payments }, { data: outstandingInvoices }] =
-    await Promise.all([
+  const [
+    { data: ownerships },
+    { data: occupancies },
+    { data: owners },
+    { data: payments },
+    { data: outstandingInvoices },
+    { data: meterReadings },
+  ] = await Promise.all([
       supabase
         .from("ownerships")
         .select("id, share_percent, effective_from, effective_to, owners(id, full_name)")
@@ -89,7 +97,28 @@ export default async function UnitDetailPage({
         .eq("unit_id", id)
         .in("status", ["issued", "partially_paid"])
         .order("billing_period_start", { ascending: false }),
+      supabase
+        .from("meter_readings")
+        .select("id, meter_type, meter_id, reading_value, reading_date")
+        .eq("unit_id", id)
+        .order("reading_date", { ascending: false })
+        .limit(20),
     ]);
+
+  const unitMeters = Array.isArray(unit.meters)
+    ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
+        type: m.type ?? "",
+        meterId: m.meter_id ?? "",
+      }))
+    : [];
+
+  const lastReadingByMeterKey: Record<string, { value: number; date: string }> = {};
+  for (const reading of meterReadings ?? []) {
+    const key = `${reading.meter_type}::${reading.meter_id ?? ""}`;
+    if (!lastReadingByMeterKey[key]) {
+      lastReadingByMeterKey[key] = { value: reading.reading_value, date: reading.reading_date };
+    }
+  }
 
   const currentShareSum = (ownerships ?? [])
     .filter((o) => !o.effective_to)
@@ -129,12 +158,7 @@ export default async function UnitDetailPage({
               areaSqm: unit.area_sqm?.toString() ?? "",
               ownershipSharePercent: unit.ownership_share_percent?.toString() ?? "",
               residentCount: unit.resident_count?.toString() ?? "",
-              meters: Array.isArray(unit.meters)
-                ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
-                    type: m.type ?? "",
-                    meterId: m.meter_id ?? "",
-                  }))
-                : [],
+              meters: unitMeters,
             }}
             meterTypeOptions={meterTypeOptions}
           />
@@ -341,6 +365,50 @@ export default async function UnitDetailPage({
                         )
                       )}
                     </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-lg font-medium">{tMeterReadings("title")}</h2>
+          {capabilities.includes("finance.meter_reading.record") && (
+            <RecordMeterReadingDialog
+              unitId={unit.id}
+              tenantId={unit.tenant_id}
+              meters={unitMeters}
+              lastReadingByKey={lastReadingByMeterKey}
+            />
+          )}
+        </div>
+
+        {unitMeters.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tMeterReadings("noMetersConfigured")}</p>
+        ) : !meterReadings || meterReadings.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tMeterReadings("noReadings")}</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tMeterReadings("meterLabel")}</TableHead>
+                  <TableHead>{tMeterReadings("readingValueLabel")}</TableHead>
+                  <TableHead>{tMeterReadings("readingDateLabel")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {meterReadings.map((reading) => (
+                  <TableRow key={reading.id}>
+                    <TableCell className="font-medium">
+                      {reading.meter_type}
+                      {reading.meter_id ? ` (${reading.meter_id})` : ""}
+                    </TableCell>
+                    <TableCell>{reading.reading_value}</TableCell>
+                    <TableCell>{reading.reading_date}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
