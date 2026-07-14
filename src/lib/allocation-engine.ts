@@ -56,10 +56,14 @@ export type AllocationOutcome = {
 
 /**
  * Computes per-unit weights for a method, then proportionally
- * distributes `totalAmount` across them. `meterDeltas` is required
- * (and only used) for by_meter; units missing a delta are excluded
- * from that fee type's allocation for this run rather than silently
- * getting zero, so the caller can flag them.
+ * distributes `totalAmount` across them. A unit missing the attribute
+ * a method needs (share %, area, resident count, or -- for by_meter --
+ * a meter delta) is excluded from that fee type's allocation for this
+ * run rather than silently getting zero, so the caller can flag it.
+ * A unit whose attribute is present but legitimately zero (e.g. a
+ * declared resident count of 0 for a vacant unit) is not excluded --
+ * it's correctly charged nothing and doesn't inflate everyone else's
+ * share.
  */
 export function calculateFeeAllocation(
   method: AllocationMethod,
@@ -68,21 +72,18 @@ export function calculateFeeAllocation(
   meterDeltas?: Map<string, number>
 ): AllocationOutcome {
   const excludedUnitIds: string[] = [];
+  const weighted: { unit: UnitAttributes; weight: number }[] = [];
 
-  const weighted = units
-    .map((unit) => {
-      const weight = getUnitWeight(method, unit, meterDeltas);
-      return { unit, weight };
-    })
-    .filter(({ unit, weight }) => {
-      if (method === "by_meter" && weight === null) {
-        excludedUnitIds.push(unit.unitId);
-        return false;
-      }
-      return true;
-    });
+  for (const unit of units) {
+    const weight = getUnitWeight(method, unit, meterDeltas);
+    if (weight === null) {
+      excludedUnitIds.push(unit.unitId);
+      continue;
+    }
+    weighted.push({ unit, weight });
+  }
 
-  const weights = weighted.map(({ weight }) => weight ?? 0);
+  const weights = weighted.map(({ weight }) => weight);
   if (weights.every((w) => w <= 0)) {
     return { results: [], excludedUnitIds, error: "no_weight_data" };
   }
@@ -90,10 +91,10 @@ export function calculateFeeAllocation(
   const amounts = distributeProportionally(weights, totalAmount);
 
   return {
-    results: weighted.map(({ unit, weight }, i) => ({
+    results: weighted.map(({ unit }, i) => ({
       unitId: unit.unitId,
       amount: amounts[i],
-      weight: weight ?? 0,
+      weight: weights[i],
     })),
     excludedUnitIds,
     error: null,
@@ -107,13 +108,13 @@ function getUnitWeight(
 ): number | null {
   switch (method) {
     case "cota_parte":
-      return unit.ownershipSharePercent ?? 0;
+      return unit.ownershipSharePercent;
     case "by_area":
-      return unit.areaSqm ?? 0;
+      return unit.areaSqm;
     case "per_unit":
       return 1;
     case "per_resident":
-      return unit.residentCount ?? 0;
+      return unit.residentCount;
     case "by_meter": {
       const delta = meterDeltas?.get(unit.unitId);
       return delta === undefined ? null : delta;
