@@ -44,12 +44,18 @@ async function computeInvoiceLines(
     residentCount: u.resident_count,
   }));
 
+  // "Already invoiced" means any non-cancelled invoice whose period
+  // overlaps the requested range, not just an exact match -- the
+  // database enforces this as a hard constraint (see
+  // invoices_no_overlapping_periods), this is what lets the UI warn
+  // about it up front instead of the whole batch failing on insert.
   const { data: existingInvoices } = await supabase
     .from("invoices")
     .select("unit_id")
     .in("unit_id", unitAttrs.map((u) => u.unitId))
-    .eq("billing_period_start", periodStart)
-    .eq("billing_period_end", periodEnd);
+    .neq("status", "cancelled")
+    .lte("billing_period_start", periodEnd)
+    .gte("billing_period_end", periodStart);
   const alreadyInvoicedUnitIds = new Set((existingInvoices ?? []).map((i) => i.unit_id));
 
   const perFeeType: {

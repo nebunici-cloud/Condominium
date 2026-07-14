@@ -433,7 +433,7 @@
     "noActiveRuleError": "Acest tip de cheltuială nu are o metodă de alocare activă.",
     "noWeightDataError": "Nu există date suficiente (ex: suprafață sau nr. de persoane) pentru a calcula această alocare.",
     "excludedUnitsWarning": "{count} apartamente nu au datele necesare pentru această metodă de alocare (ex: cotă-parte, suprafață, nr. de persoane sau citire contor) și vor fi excluse din această categorie.",
-    "alreadyInvoicedWarning": "{skip} din {total} apartamente au deja o factură pentru această perioadă și vor fi omise.",
+    "alreadyInvoicedWarning": "{skip} din {total} apartamente au deja o factură care se suprapune cu această perioadă și vor fi omise.",
     "willInvoice": "Vor fi create {count} facturi, însumând {total}.",
     "noInvoices": "Nicio factură generată încă pentru acest bloc.",
     "totalAmount": "Sumă totală",
