@@ -10,10 +10,12 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 async function recomputeInvoiceStatus(supabase: SupabaseClient, invoiceId: string) {
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("total_amount")
+    .select("total_amount, status")
     .eq("id", invoiceId)
     .maybeSingle();
-  if (!invoice) return;
+  // Cancelling supersedes the payment-driven status -- a payment
+  // touching a cancelled invoice shouldn't silently revive it.
+  if (!invoice || invoice.status === "cancelled") return;
 
   const { data: payments } = await supabase
     .from("payments")

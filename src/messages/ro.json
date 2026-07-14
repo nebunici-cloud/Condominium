@@ -442,7 +442,10 @@
     "statusIssued": "Emisă",
     "statusPartiallyPaid": "Parțial achitată",
     "statusPaid": "Achitată",
-    "statusCancelled": "Anulată"
+    "statusCancelled": "Anulată",
+    "cancelInvoice": "Anulează factura",
+    "cancelInvoiceConfirm": "Ești sigur? Factura va fi marcată drept anulată, iar orice plată asociată ei va rămâne neasociată (poate fi asociată din nou altei facturi).",
+    "cancelSuccess": "Factura a fost anulată."
   },
   "payments": {
     "title": "Plăți",

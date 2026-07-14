@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
+import { cancelInvoice } from "./actions";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   issued: "outline",
@@ -55,6 +57,8 @@ export default async function BuildingInvoicesPage({
 
   const context = await getCurrentCapabilities(supabase, building.association_id);
   const capabilities = context?.capabilities ?? [];
+  const canCancel =
+    capabilities.includes("finance.invoice.generate") && capabilities.includes("finance.payment.record");
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
 
@@ -106,6 +110,7 @@ export default async function BuildingInvoicesPage({
                 <TableHead>{t("period")}</TableHead>
                 <TableHead>{t("totalAmount")}</TableHead>
                 <TableHead>{tCommon("status")}</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,6 +125,20 @@ export default async function BuildingInvoicesPage({
                     <Badge variant={statusVariant[invoice.status]}>
                       {t(statusLabelKeys[invoice.status])}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {canCancel && (invoice.status === "issued" || invoice.status === "partially_paid") && (
+                      <EndEffectiveDatedButton
+                        id={invoice.id}
+                        action={cancelInvoice}
+                        triggerLabel={t("cancelInvoice")}
+                        confirmTitle={t("cancelInvoice")}
+                        confirmDescription={t("cancelInvoiceConfirm")}
+                        successMessage={t("cancelSuccess")}
+                        cancelLabel={tCommon("cancel")}
+                        confirmLabel={tCommon("confirm")}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

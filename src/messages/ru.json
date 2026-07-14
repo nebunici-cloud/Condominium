@@ -442,7 +442,10 @@
     "statusIssued": "Выставлен",
     "statusPartiallyPaid": "Частично оплачен",
     "statusPaid": "Оплачен",
-    "statusCancelled": "Отменён"
+    "statusCancelled": "Отменён",
+    "cancelInvoice": "Отменить счёт",
+    "cancelInvoiceConfirm": "Вы уверены? Счёт будет отмечен как отменённый, а любой привязанный к нему платёж станет непривязанным (его можно будет привязать к другому счёту).",
+    "cancelSuccess": "Счёт отменён."
   },
   "payments": {
     "title": "Платежи",

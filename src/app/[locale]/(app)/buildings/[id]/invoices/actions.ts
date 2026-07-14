@@ -285,3 +285,27 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
   revalidatePath("/", "layout");
   return { error: null, invoiced };
 }
+
+// Cancelling clears any payment matched to this invoice rather than
+// leaving it pointing at a dead invoice -- the payment itself still
+// counts toward the unit's outstanding balance either way (matching
+// is reconciliation bookkeeping, not what makes a payment count), but
+// leaving it "matched" to a cancelled invoice would be confusing and
+// would block re-matching it to whatever invoice replaces this one.
+export async function cancelInvoice(invoiceId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("invoices")
+    .update({ status: "cancelled" })
+    .eq("id", invoiceId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.from("payments").update({ matched_invoice_id: null }).eq("matched_invoice_id", invoiceId);
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}
