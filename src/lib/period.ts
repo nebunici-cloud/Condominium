@@ -3,6 +3,14 @@
 // a container running in a non-UTC timezone can't shift a period's
 // start/end by a day.
 
+// Plain dd.mm.yyyy -- the format used on printed invoices/notices
+// here regardless of locale, not the ISO yyyy-mm-dd a date-only
+// string naturally sorts as.
+export function formatDate(dateStr: string): string {
+  const [year, month, day] = dateStr.slice(0, 10).split("-");
+  return `${day}.${month}.${year}`;
+}
+
 export function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() + days);

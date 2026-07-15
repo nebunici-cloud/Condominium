@@ -17,9 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { computeOutstandingBalance } from "@/lib/balance";
-import { formatPeriodLabel } from "@/lib/period";
+import { formatPeriodLabel, formatDate } from "@/lib/period";
 
-import { statusHeaderClasses, statusLabelKeys } from "../invoice-status";
+import { statusBadgeClasses, statusLabelKeys } from "../invoice-status";
 import { AdjustmentDialog } from "./adjustment-dialog";
 
 // Short unit-of-measure labels matching how a real invoice prints
@@ -187,7 +187,7 @@ export default async function InvoiceDetailPage({
             <p className="text-xs tracking-wide text-slate-300 uppercase">{associationName}</p>
             <h1 className="text-xl font-semibold">{t("digitalInvoiceTitle")}</h1>
           </div>
-          <Badge className={`text-sm ${statusHeaderClasses[invoice.status]}`}>
+          <Badge className={`text-sm ${statusBadgeClasses[invoice.status]}`}>
             {t(statusLabelKeys[invoice.status])}
           </Badge>
         </div>
@@ -197,7 +197,7 @@ export default async function InvoiceDetailPage({
             <dt className="text-muted-foreground">{t("invoiceNumberLabel")}</dt>
             <dd className="font-medium">{invoice.invoice_number ?? t("draftPlaceholder")}</dd>
             <dt className="text-muted-foreground">{t("dueDateLabel")}</dt>
-            <dd className="font-medium">{invoice.due_date ?? "—"}</dd>
+            <dd className="font-medium">{invoice.due_date ? formatDate(invoice.due_date) : "—"}</dd>
             <dt className="text-muted-foreground">{t("period")}</dt>
             <dd className="font-medium">
               {formatPeriodLabel(invoice.billing_period_start, invoice.billing_period_end, locale)}
@@ -227,7 +227,7 @@ export default async function InvoiceDetailPage({
             <p className="text-3xl font-bold">{grandTotal.toFixed(2)} MDL</p>
             {invoice.due_date && (
               <p className="text-xs text-muted-foreground">
-                {t("dueDateHint", { date: invoice.due_date })}
+                {t("dueDateHint", { date: formatDate(invoice.due_date) })}
               </p>
             )}
           </div>
@@ -324,11 +324,15 @@ export default async function InvoiceDetailPage({
                     <TableCell>{row.feeTypeLabel}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {row.meter?.start_value}
-                      <span className="ml-1 text-xs text-muted-foreground">({row.meter?.start_date})</span>
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({row.meter?.start_date && formatDate(row.meter.start_date)})
+                      </span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {row.meter?.end_value}
-                      <span className="ml-1 text-xs text-muted-foreground">({row.meter?.end_date})</span>
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({row.meter?.end_date && formatDate(row.meter.end_date)})
+                      </span>
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {row.quantity} {row.unitLabel}

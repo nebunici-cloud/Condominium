@@ -509,7 +509,7 @@
     "editDraftSuccess": "Черновик обновлён.",
     "confirmEdit": "Сохранить изменения",
     "noLines": "У этого счёта нет ни одной строки.",
-    "digitalInvoiceTitle": "Платёжное извещение",
+    "digitalInvoiceTitle": "Счёт на оплату",
     "invoiceNumberLabel": "№ Счёта",
     "issuedAtLabel": "Дата Выставления",
     "dueDateLabel": "Срок Оплаты",

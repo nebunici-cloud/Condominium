@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { SendIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatPeriodLabel } from "@/lib/period";
+import { formatPeriodLabel, formatDate } from "@/lib/period";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
-import { statusVariant, statusLabelKeys } from "./invoice-status";
+import { statusBadgeClasses, statusLabelKeys } from "./invoice-status";
 import { cancelInvoice, cancelInvoices, publishInvoice, publishDraftInvoices } from "./actions";
 
 type InvoiceRow = {
@@ -290,11 +290,11 @@ export function InvoicesTable({
                 <TableCell className="font-medium">{invoice.unitNumber}</TableCell>
                 <TableCell>{formatPeriodLabel(invoice.periodStart, invoice.periodEnd, locale)}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {invoice.issuedAt ? invoice.issuedAt.slice(0, 10) : "—"}
+                  {invoice.issuedAt ? formatDate(invoice.issuedAt) : "—"}
                 </TableCell>
                 <TableCell>{invoice.totalAmount}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant[invoice.status]}>
+                  <Badge className={statusBadgeClasses[invoice.status]}>
                     {t(statusLabelKeys[invoice.status])}
                   </Badge>
                 </TableCell>
