@@ -9,6 +9,7 @@ const ownerSchema = z.object({
   fullName: z.string().trim().min(1),
   email: z.string().trim().optional(),
   phone: z.string().trim().optional(),
+  personalCode: z.string().trim().optional(),
 });
 
 export async function createOwner(input: z.infer<typeof ownerSchema>) {
@@ -29,6 +30,7 @@ export async function createOwner(input: z.infer<typeof ownerSchema>) {
     full_name: parsed.fullName,
     email: parsed.email || null,
     phone: parsed.phone || null,
+    personal_code: parsed.personalCode || null,
   });
 
   if (error) {
@@ -44,6 +46,7 @@ const updateOwnerSchema = z.object({
   fullName: z.string().trim().min(1),
   email: z.string().trim().optional(),
   phone: z.string().trim().optional(),
+  personalCode: z.string().trim().optional(),
 });
 
 export async function updateOwner(input: z.infer<typeof updateOwnerSchema>) {
@@ -56,6 +59,7 @@ export async function updateOwner(input: z.infer<typeof updateOwnerSchema>) {
       full_name: parsed.fullName,
       email: parsed.email || null,
       phone: parsed.phone || null,
+      personal_code: parsed.personalCode || null,
     })
     .eq("id", parsed.id);
 

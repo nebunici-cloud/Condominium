@@ -21,6 +21,7 @@ type Owner = {
   full_name: string;
   email: string | null;
   phone: string | null;
+  personal_code: string | null;
 };
 
 export function OwnersTable({ owners, canEdit }: { owners: Owner[]; canEdit: boolean }) {
@@ -31,7 +32,7 @@ export function OwnersTable({ owners, canEdit }: { owners: Owner[]; canEdit: boo
     const query = search.trim().toLowerCase();
     if (!query) return owners;
     return owners.filter((owner) =>
-      [owner.full_name, owner.email, owner.phone]
+      [owner.full_name, owner.email, owner.phone, owner.personal_code]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(query))
     );
@@ -59,6 +60,7 @@ export function OwnersTable({ owners, canEdit }: { owners: Owner[]; canEdit: boo
                 <TableHead>{t("fullNameLabel")}</TableHead>
                 <TableHead>{t("emailLabel")}</TableHead>
                 <TableHead>{t("phoneLabel")}</TableHead>
+                <TableHead>{t("personalCodeLabel")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -68,6 +70,7 @@ export function OwnersTable({ owners, canEdit }: { owners: Owner[]; canEdit: boo
                   <TableCell className="font-medium">{owner.full_name}</TableCell>
                   <TableCell>{owner.email ?? "—"}</TableCell>
                   <TableCell>{owner.phone ?? "—"}</TableCell>
+                  <TableCell>{owner.personal_code ?? "—"}</TableCell>
                   <TableCell>
                     {canEdit && (
                       <EditOwnerDialog
@@ -76,6 +79,7 @@ export function OwnersTable({ owners, canEdit }: { owners: Owner[]; canEdit: boo
                           fullName: owner.full_name,
                           email: owner.email ?? "",
                           phone: owner.phone ?? "",
+                          personalCode: owner.personal_code ?? "",
                         }}
                       />
                     )}

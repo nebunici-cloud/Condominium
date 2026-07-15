@@ -14,7 +14,7 @@ export default async function OwnersPage() {
 
   const { data: owners } = await supabase
     .from("owners")
-    .select("id, full_name, email, phone, created_at")
+    .select("id, full_name, email, phone, personal_code, created_at")
     .order("created_at", { ascending: false });
 
   return (

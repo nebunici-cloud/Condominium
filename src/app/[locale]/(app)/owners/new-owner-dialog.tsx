@@ -33,6 +33,7 @@ const schema = z.object({
   fullName: z.string().trim().min(1),
   email: z.string().trim().optional(),
   phone: z.string().trim().optional(),
+  personalCode: z.string().trim().optional(),
 });
 
 export function NewOwnerDialog() {
@@ -43,7 +44,7 @@ export function NewOwnerDialog() {
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { fullName: "", email: "", phone: "" },
+    defaultValues: { fullName: "", email: "", phone: "", personalCode: "" },
   });
 
   async function onSubmit(values: z.infer<typeof schema>) {
@@ -109,6 +110,19 @@ export function NewOwnerDialog() {
                   <FormLabel>{t("phoneLabel")}</FormLabel>
                   <FormControl>
                     <Input placeholder={t("phonePlaceholder")} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="personalCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("personalCodeLabel")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t("personalCodePlaceholder")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

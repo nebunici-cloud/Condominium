@@ -33,6 +33,7 @@ const schema = z.object({
   fullName: z.string().trim().min(1),
   email: z.string().trim().optional(),
   phone: z.string().trim().optional(),
+  personalCode: z.string().trim().optional(),
 });
 
 export function EditOwnerDialog({
@@ -40,7 +41,7 @@ export function EditOwnerDialog({
   defaultValues,
 }: {
   ownerId: string;
-  defaultValues: { fullName: string; email: string; phone: string };
+  defaultValues: { fullName: string; email: string; phone: string; personalCode: string };
 }) {
   const t = useTranslations("owners");
   const tCommon = useTranslations("common");
@@ -120,6 +121,19 @@ export function EditOwnerDialog({
                   <FormLabel>{t("phoneLabel")}</FormLabel>
                   <FormControl>
                     <Input placeholder={t("phonePlaceholder")} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="personalCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("personalCodeLabel")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t("personalCodePlaceholder")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

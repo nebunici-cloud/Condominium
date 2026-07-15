@@ -553,11 +553,11 @@ export async function cancelInvoice(invoiceId: string) {
 export async function publishInvoice(invoiceId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from("invoices")
-    .update({ status: "issued" })
-    .eq("id", invoiceId)
-    .eq("status", "draft");
+  // publish_invoices assigns invoice_number/issued_at/due_date
+  // atomically (a per-tenant counter increment can't be done safely
+  // from a plain client-side update), so publishing now always goes
+  // through the RPC rather than a direct status update.
+  const { error } = await supabase.rpc("publish_invoices", { p_invoice_ids: [invoiceId] });
 
   if (error) {
     return { error: error.message };
@@ -570,19 +570,14 @@ export async function publishInvoice(invoiceId: string) {
 export async function publishDraftInvoices(invoiceIds: string[]) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("invoices")
-    .update({ status: "issued" })
-    .in("id", invoiceIds)
-    .eq("status", "draft")
-    .select("id");
+  const { data, error } = await supabase.rpc("publish_invoices", { p_invoice_ids: invoiceIds });
 
   if (error) {
     return { error: error.message, published: 0 };
   }
 
   revalidatePath("/", "layout");
-  return { error: null, published: data?.length ?? 0 };
+  return { error: null, published: data ?? 0 };
 }
 
 const adjustmentSchema = z.object({
