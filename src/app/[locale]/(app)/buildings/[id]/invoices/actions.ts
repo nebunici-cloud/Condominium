@@ -203,7 +203,17 @@ async function computeInvoiceLines(
     method: AllocationMethod;
     allocationRuleId: string;
     totalAmount: number;
-    lines: { unitId: string; unitNumber: string; amount: number }[];
+    // Only meaningful for tariff_rate -- the standing rate every unit's
+    // quantity is multiplied by. Proportional methods have no
+    // configured rate (the amount is a share of an admin-typed total).
+    rate?: number;
+    // The quantity basis a line's weight was measured in -- for
+    // tariff_rate this is the configured unit_of_measure, for every
+    // other method it's just the method itself (by_area's weight *is*
+    // the area basis). Threaded through to invoice_lines so the
+    // detail page can show a real "Consum / U.M. / Tarif" breakdown.
+    unitOfMeasure?: AllocationMethod;
+    lines: { unitId: string; unitNumber: string; amount: number; weight: number }[];
     excludedUnitIds: string[];
     error: string | null;
   }[] = [];
@@ -274,10 +284,13 @@ async function computeInvoiceLines(
         method,
         allocationRuleId: activeRule.id,
         totalAmount: computedTotal,
+        rate,
+        unitOfMeasure,
         lines: outcome.results.map((r) => ({
           unitId: r.unitId,
           unitNumber: unitNumberById.get(r.unitId) ?? "?",
           amount: r.amount,
+          weight: r.weight,
         })),
         excludedUnitIds: outcome.excludedUnitIds,
         error: outcome.error,
@@ -306,10 +319,12 @@ async function computeInvoiceLines(
       method,
       allocationRuleId: activeRule.id,
       totalAmount: input.totalAmount ?? 0,
+      unitOfMeasure: method,
       lines: outcome.results.map((r) => ({
         unitId: r.unitId,
         unitNumber: unitNumberById.get(r.unitId) ?? "?",
         amount: r.amount,
+        weight: r.weight,
       })),
       excludedUnitIds: outcome.excludedUnitIds,
       error: outcome.error,
@@ -474,6 +489,9 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
             method: f.method,
             total_amount_for_fee_type: f.totalAmount,
             unit_id: unit.unitId,
+            quantity: line.weight,
+            unit_of_measure: f.unitOfMeasure,
+            ...(f.rate !== undefined ? { rate: f.rate } : {}),
           },
         };
       })

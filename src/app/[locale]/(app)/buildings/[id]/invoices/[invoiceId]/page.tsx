@@ -14,10 +14,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { statusVariant, statusLabelKeys } from "../invoice-status";
 import { AdjustmentDialog } from "./adjustment-dialog";
+
+// Short unit-of-measure labels matching how a real invoice prints
+// them (u.m. column) -- keyed by the allocation basis stored on each
+// line's calculation_input.
+const quantityUnitLabels: Record<string, string> = {
+  cota_parte: "%",
+  by_area: "m²",
+  per_unit: "ap.",
+  per_resident: "pers.",
+  by_meter: "u.c.",
+};
+
+type CalculationInput = {
+  quantity?: number;
+  unit_of_measure?: string;
+  rate?: number;
+};
 
 export default async function InvoiceDetailPage({
   params,
@@ -59,12 +77,31 @@ export default async function InvoiceDetailPage({
 
   const { data: lines } = await supabase
     .from("invoice_lines")
-    .select("id, amount, adjustment_amount, adjustment_reason, fee_types(label)")
+    .select("id, amount, adjustment_amount, adjustment_reason, calculation_input, fee_types(label)")
     .eq("invoice_id", invoiceId)
     .order("created_at", { ascending: true });
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
   const unitNumber = embedOne(invoice.units)?.unit_number;
+
+  const rows = (lines ?? []).map((line) => {
+    const input = (line.calculation_input ?? {}) as CalculationInput;
+    const quantity = input.quantity;
+    const unitLabel = input.unit_of_measure ? (quantityUnitLabels[input.unit_of_measure] ?? "") : "";
+    const rate = input.rate ?? (quantity && quantity > 0 ? line.amount / quantity : undefined);
+    const adjustment = line.adjustment_amount ?? 0;
+    return {
+      id: line.id,
+      feeTypeLabel: embedOne(line.fee_types)?.label ?? "",
+      quantity,
+      unitLabel,
+      rate,
+      amount: line.amount,
+      adjustment,
+      adjustmentReason: line.adjustment_reason,
+      total: Number(line.amount) + Number(adjustment),
+    };
+  });
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
@@ -78,73 +115,88 @@ export default async function InvoiceDetailPage({
         ]}
       />
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {tUnits("unitNumberLabel")} {unitNumber}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {invoice.billing_period_start} – {invoice.billing_period_end}
-          </p>
-        </div>
-        <Badge variant={statusVariant[invoice.status]}>{t(statusLabelKeys[invoice.status])}</Badge>
-      </div>
+      <Card className="mb-6">
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">
+              {tUnits("unitNumberLabel")} {unitNumber}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {associationName} — {building.name}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t("period")}: {invoice.billing_period_start} – {invoice.billing_period_end}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant={statusVariant[invoice.status]}>{t(statusLabelKeys[invoice.status])}</Badge>
+            <p className="text-2xl font-semibold">{invoice.total_amount}</p>
+          </div>
+        </CardContent>
+      </Card>
 
-      {!lines || lines.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noLines")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("feeTypeColumn")}</TableHead>
-                <TableHead>{t("baseAmountColumn")}</TableHead>
-                <TableHead>{t("adjustmentColumn")}</TableHead>
-                <TableHead>{t("lineTotalColumn")}</TableHead>
+                <TableHead className="text-right">{t("quantityColumn")}</TableHead>
+                <TableHead>{t("unitOfMeasureColumnShort")}</TableHead>
+                <TableHead className="text-right">{t("rateColumn")}</TableHead>
+                <TableHead className="text-right">{t("baseAmountColumn")}</TableHead>
+                <TableHead className="text-right">{t("adjustmentColumn")}</TableHead>
+                <TableHead className="text-right">{t("lineTotalColumn")}</TableHead>
                 {canEditLines && <TableHead />}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lines.map((line) => {
-                const adjustment = line.adjustment_amount ?? 0;
-                return (
-                  <TableRow key={line.id}>
-                    <TableCell className="font-medium">{embedOne(line.fee_types)?.label}</TableCell>
-                    <TableCell>{line.amount}</TableCell>
-                    <TableCell>
-                      {adjustment !== 0 ? (
-                        <div className="flex flex-col">
-                          <span>{adjustment}</span>
-                          {line.adjustment_reason && (
-                            <span className="text-xs text-muted-foreground">
-                              {line.adjustment_reason}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {(Number(line.amount) + Number(adjustment)).toFixed(2)}
-                    </TableCell>
-                    {canEditLines && (
-                      <TableCell>
-                        <AdjustmentDialog
-                          invoiceLineId={line.id}
-                          currentAmount={adjustment}
-                          currentReason={line.adjustment_reason}
-                        />
-                      </TableCell>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="font-medium">{row.feeTypeLabel}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {row.quantity !== undefined ? row.quantity : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{row.unitLabel || "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {row.rate !== undefined ? row.rate.toFixed(2) : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{row.amount}</TableCell>
+                  <TableCell className="text-right">
+                    {row.adjustment !== 0 ? (
+                      <div className="flex flex-col items-end">
+                        <span className="tabular-nums">{row.adjustment}</span>
+                        {row.adjustmentReason && (
+                          <span className="text-xs text-muted-foreground">{row.adjustmentReason}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
-                  </TableRow>
-                );
-              })}
+                  </TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">
+                    {row.total.toFixed(2)}
+                  </TableCell>
+                  {canEditLines && (
+                    <TableCell>
+                      <AdjustmentDialog
+                        invoiceLineId={row.id}
+                        currentAmount={row.adjustment}
+                        currentReason={row.adjustmentReason}
+                      />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={3}>{t("totalAmount")}</TableCell>
-                <TableCell className="font-semibold">{invoice.total_amount}</TableCell>
+                <TableCell colSpan={6}>{t("totalAmount")}</TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">
+                  {invoice.total_amount}
+                </TableCell>
                 {canEditLines && <TableCell />}
               </TableRow>
             </TableFooter>
