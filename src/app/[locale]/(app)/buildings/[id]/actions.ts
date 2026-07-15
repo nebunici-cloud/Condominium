@@ -19,6 +19,7 @@ const unitSchema = z.object({
   areaSqm: z.union([z.number(), z.nan()]).optional(),
   ownershipSharePercent: z.union([z.number(), z.nan()]).optional(),
   residentCount: z.union([z.number(), z.nan()]).optional(),
+  paymentAccountCode: z.string().trim().optional(),
   meters: z.array(meterSchema).default([]),
 });
 
@@ -40,6 +41,7 @@ export async function createUnit(input: z.infer<typeof unitSchema>) {
     // a manual edit) sets it, same as any other unit.
     resident_count: Number.isFinite(parsed.residentCount) ? parsed.residentCount : null,
     resident_count_is_manual: Number.isFinite(parsed.residentCount),
+    payment_account_code: parsed.paymentAccountCode || null,
     meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
   });
 
@@ -58,6 +60,7 @@ const updateUnitSchema = z.object({
   areaSqm: z.union([z.number(), z.nan()]).optional(),
   ownershipSharePercent: z.union([z.number(), z.nan()]).optional(),
   residentCount: z.union([z.number(), z.nan()]).optional(),
+  paymentAccountCode: z.string().trim().optional(),
   meters: z.array(meterSchema).default([]),
 });
 
@@ -84,6 +87,7 @@ export async function updateUnit(input: z.infer<typeof updateUnitSchema>) {
       ...(residentCountIsManual
         ? { resident_count: parsed.residentCount, resident_count_is_manual: true }
         : { resident_count_is_manual: false }),
+      payment_account_code: parsed.paymentAccountCode || null,
       meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
     })
     .eq("id", parsed.id);

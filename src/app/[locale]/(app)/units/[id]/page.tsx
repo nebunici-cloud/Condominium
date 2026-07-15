@@ -48,7 +48,7 @@ export default async function UnitDetailPage({
   const { data: unit } = await supabase
     .from("units")
     .select(
-      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, resident_count_is_manual, meters, building_id, buildings(name, association_id, associations(name))"
+      "id, tenant_id, unit_number, floor, area_sqm, ownership_share_percent, resident_count, resident_count_is_manual, payment_account_code, meters, building_id, buildings(name, association_id, associations(name))"
     )
     .eq("id", id)
     .maybeSingle();
@@ -179,6 +179,7 @@ export default async function UnitDetailPage({
               areaSqm: unit.area_sqm?.toString() ?? "",
               ownershipSharePercent: unit.ownership_share_percent?.toString() ?? "",
               residentCount: unit.resident_count_is_manual ? (unit.resident_count?.toString() ?? "") : "",
+              paymentAccountCode: unit.payment_account_code ?? "",
               meters: unitMeters,
             }}
             meterTypeOptions={meterTypeOptions}

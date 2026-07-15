@@ -43,6 +43,7 @@ const schema = z.object({
   areaSqm: z.string().trim().optional(),
   ownershipSharePercent: z.string().trim().optional(),
   residentCount: z.string().trim().optional(),
+  paymentAccountCode: z.string().trim().optional(),
   meters: z.array(z.object({ type: z.string(), meterId: z.string() })),
 });
 
@@ -70,6 +71,7 @@ export function NewUnitDialog({
       areaSqm: "",
       ownershipSharePercent: "",
       residentCount: "",
+      paymentAccountCode: "",
       meters: [],
     },
   });
@@ -88,6 +90,7 @@ export function NewUnitDialog({
         ? Number(values.ownershipSharePercent)
         : undefined,
       residentCount: values.residentCount ? Number(values.residentCount) : undefined,
+      paymentAccountCode: values.paymentAccountCode,
       meters: values.meters.filter((m) => m.type && m.meterId),
     });
     setSubmitting(false);
@@ -185,6 +188,20 @@ export function NewUnitDialog({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="paymentAccountCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("paymentAccountCodeLabel")}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t("paymentAccountCodePlaceholder")} {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">{t("paymentAccountCodeHint")}</p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid gap-2">
               <Label>{t("metersLabel")}</Label>

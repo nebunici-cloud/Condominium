@@ -150,7 +150,10 @@
     "errorInvalidNumber": "Valoare numerică invalidă",
     "residentCountColumnLabel": "Nr. persoane",
     "residentCountAutoPlaceholder": "Automat: {count} (din Locatari)",
-    "residentCountAutoHint": "Lasă gol pentru a calcula automat din Locatarii adăugați acestui apartament. Scrie un număr pentru a-l stabili manual."
+    "residentCountAutoHint": "Lasă gol pentru a calcula automat din Locatarii adăugați acestui apartament. Scrie un număr pentru a-l stabili manual.",
+    "paymentAccountCodeLabel": "Cod de asociere plăți (opțional)",
+    "paymentAccountCodePlaceholder": "ex: cod unic pentru reconcilierea extraselor bancare",
+    "paymentAccountCodeHint": "Folosit pentru a asocia automat plățile din extrasul bancar cu acest apartament. Opțional până la activarea reconcilierii automate."
   },
   "owners": {
     "title": "Proprietari",
