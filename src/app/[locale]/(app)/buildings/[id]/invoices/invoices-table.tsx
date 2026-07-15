@@ -1,0 +1,292 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
+
+import { statusVariant, statusLabelKeys } from "./invoice-status";
+import { cancelInvoice, cancelInvoices, publishInvoice, publishDraftInvoices } from "./actions";
+
+type InvoiceRow = {
+  id: string;
+  invoiceNumber: number | null;
+  unitNumber: string;
+  periodStart: string;
+  periodEnd: string;
+  totalAmount: number;
+  status: string;
+};
+
+// Shared shape for the two mass-action buttons -- confirm dialog,
+// loading state, and toast are identical, only the action/labels
+// differ.
+function BulkActionButton({
+  count,
+  triggerLabel,
+  confirmTitle,
+  confirmDescription,
+  confirmLabel,
+  cancelLabel,
+  confirmVariant,
+  onConfirm,
+}: {
+  count: number;
+  triggerLabel: string;
+  confirmTitle: string;
+  confirmDescription: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  confirmVariant: "default" | "destructive";
+  onConfirm: () => Promise<{ error: string | null }>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleConfirm() {
+    setSubmitting(true);
+    const result = await onConfirm();
+    setSubmitting(false);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant={confirmVariant === "destructive" ? "outline" : "default"}>
+          {triggerLabel} ({count})
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{confirmTitle}</DialogTitle>
+          <DialogDescription>{confirmDescription}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            {cancelLabel}
+          </Button>
+          <Button variant={confirmVariant} disabled={submitting} onClick={handleConfirm}>
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function InvoicesTable({
+  buildingId,
+  invoices,
+  canPublish,
+  canDiscard,
+}: {
+  buildingId: string;
+  invoices: InvoiceRow[];
+  canPublish: boolean;
+  canDiscard: boolean;
+}) {
+  const t = useTranslations("invoices");
+  const tUnits = useTranslations("units");
+  const tCommon = useTranslations("common");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const allSelected = invoices.length > 0 && selected.size === invoices.length;
+  const someSelected = selected.size > 0 && !allSelected;
+
+  function toggleAll(checked: boolean) {
+    setSelected(checked ? new Set(invoices.map((i) => i.id)) : new Set());
+  }
+
+  function toggleOne(id: string, checked: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  const selectedIds = Array.from(selected);
+  const selectedDraftCount = invoices.filter(
+    (i) => selected.has(i.id) && i.status === "draft"
+  ).length;
+  const selectedCancellableCount = invoices.filter(
+    (i) => selected.has(i.id) && (i.status === "draft" || i.status === "issued" || i.status === "partially_paid")
+  ).length;
+
+  async function handleBulkPublish() {
+    const result = await publishDraftInvoices(selectedIds);
+    if (result.error) return { error: result.error };
+    toast.success(t("publishAllSuccess", { count: result.published }));
+    setSelected(new Set());
+    return { error: null };
+  }
+
+  async function handleBulkCancel() {
+    const result = await cancelInvoices(selectedIds);
+    if (result.error) return { error: result.error };
+    toast.success(t("bulkCancelSuccess", { count: result.cancelled }));
+    setSelected(new Set());
+    return { error: null };
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+          <span className="text-sm text-muted-foreground">
+            {t("selectedCount", { count: selected.size })}
+          </span>
+          {canPublish && selectedDraftCount > 0 && (
+            <BulkActionButton
+              count={selectedDraftCount}
+              triggerLabel={t("publish")}
+              confirmTitle={t("publish")}
+              confirmDescription={t("bulkPublishConfirm", { count: selectedDraftCount })}
+              confirmLabel={tCommon("confirm")}
+              cancelLabel={tCommon("cancel")}
+              confirmVariant="default"
+              onConfirm={handleBulkPublish}
+            />
+          )}
+          {canDiscard && selectedCancellableCount > 0 && (
+            <BulkActionButton
+              count={selectedCancellableCount}
+              triggerLabel={t("cancelInvoice")}
+              confirmTitle={t("cancelInvoice")}
+              confirmDescription={t("bulkCancelConfirm", { count: selectedCancellableCount })}
+              confirmLabel={tCommon("confirm")}
+              cancelLabel={tCommon("cancel")}
+              confirmVariant="destructive"
+              onConfirm={handleBulkCancel}
+            />
+          )}
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8">
+                <Checkbox
+                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                  onCheckedChange={(checked) => toggleAll(checked === true)}
+                  aria-label={t("selectAll")}
+                />
+              </TableHead>
+              <TableHead>{t("invoiceNumberLabel")}</TableHead>
+              <TableHead>{tUnits("unitNumberLabel")}</TableHead>
+              <TableHead>{t("period")}</TableHead>
+              <TableHead>{t("totalAmount")}</TableHead>
+              <TableHead>{tCommon("status")}</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invoices.map((invoice) => (
+              <TableRow key={invoice.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selected.has(invoice.id)}
+                    onCheckedChange={(checked) => toggleOne(invoice.id, checked === true)}
+                    aria-label={t("selectRow")}
+                  />
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {invoice.invoiceNumber ?? "—"}
+                </TableCell>
+                <TableCell className="font-medium">{invoice.unitNumber}</TableCell>
+                <TableCell>
+                  {invoice.periodStart} – {invoice.periodEnd}
+                </TableCell>
+                <TableCell>{invoice.totalAmount}</TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant[invoice.status]}>
+                    {t(statusLabelKeys[invoice.status])}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button asChild size="sm" variant="ghost">
+                      <Link href={`/buildings/${buildingId}/invoices/${invoice.id}`}>
+                        {t("viewDetails")}
+                      </Link>
+                    </Button>
+                    {canPublish && invoice.status === "draft" && (
+                      <EndEffectiveDatedButton
+                        id={invoice.id}
+                        action={publishInvoice}
+                        triggerLabel={t("publish")}
+                        confirmTitle={t("publish")}
+                        confirmDescription={t("publishConfirm")}
+                        successMessage={t("publishSuccess")}
+                        cancelLabel={tCommon("cancel")}
+                        confirmLabel={tCommon("confirm")}
+                        confirmVariant="default"
+                      />
+                    )}
+                    {canDiscard &&
+                      (invoice.status === "draft" ||
+                        invoice.status === "issued" ||
+                        invoice.status === "partially_paid") && (
+                        <EndEffectiveDatedButton
+                          id={invoice.id}
+                          action={cancelInvoice}
+                          triggerLabel={
+                            invoice.status === "draft" ? t("discardDraft") : t("cancelInvoice")
+                          }
+                          confirmTitle={
+                            invoice.status === "draft" ? t("discardDraft") : t("cancelInvoice")
+                          }
+                          confirmDescription={
+                            invoice.status === "draft"
+                              ? t("discardDraftConfirm")
+                              : t("cancelInvoiceConfirm")
+                          }
+                          successMessage={
+                            invoice.status === "draft" ? t("discardDraftSuccess") : t("cancelSuccess")
+                          }
+                          cancelLabel={tCommon("cancel")}
+                          confirmLabel={tCommon("confirm")}
+                        />
+                      )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}

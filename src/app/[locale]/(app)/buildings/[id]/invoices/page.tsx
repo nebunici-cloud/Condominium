@@ -1,27 +1,15 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
 import { embedOne } from "@/lib/embed";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 import { PublishDraftsButton } from "./publish-drafts-button";
-import { cancelInvoice, publishInvoice, getBillingDefaults, getDraftBatchAmounts } from "./actions";
-import { statusVariant, statusLabelKeys } from "./invoice-status";
+import { InvoicesTable } from "./invoices-table";
+import { getBillingDefaults, getDraftBatchAmounts } from "./actions";
 
 export default async function BuildingInvoicesPage({
   params,
@@ -30,8 +18,6 @@ export default async function BuildingInvoicesPage({
 }) {
   const { id } = await params;
   const t = await getTranslations("invoices");
-  const tUnits = await getTranslations("units");
-  const tCommon = await getTranslations("common");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
@@ -138,86 +124,20 @@ export default async function BuildingInvoicesPage({
       {!invoices || invoices.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noInvoices")}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("invoiceNumberLabel")}</TableHead>
-                <TableHead>{tUnits("unitNumberLabel")}</TableHead>
-                <TableHead>{t("period")}</TableHead>
-                <TableHead>{t("totalAmount")}</TableHead>
-                <TableHead>{tCommon("status")}</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="text-muted-foreground">
-                    {invoice.invoice_number ?? "—"}
-                  </TableCell>
-                  <TableCell className="font-medium">{embedOne(invoice.units)?.unit_number}</TableCell>
-                  <TableCell>
-                    {invoice.billing_period_start} – {invoice.billing_period_end}
-                  </TableCell>
-                  <TableCell>{invoice.total_amount}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant[invoice.status]}>
-                      {t(statusLabelKeys[invoice.status])}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={`/buildings/${building.id}/invoices/${invoice.id}`}>
-                          {t("viewDetails")}
-                        </Link>
-                      </Button>
-                      {canPublish && invoice.status === "draft" && (
-                        <EndEffectiveDatedButton
-                          id={invoice.id}
-                          action={publishInvoice}
-                          triggerLabel={t("publish")}
-                          confirmTitle={t("publish")}
-                          confirmDescription={t("publishConfirm")}
-                          successMessage={t("publishSuccess")}
-                          cancelLabel={tCommon("cancel")}
-                          confirmLabel={tCommon("confirm")}
-                          confirmVariant="default"
-                        />
-                      )}
-                      {canDiscard &&
-                        (invoice.status === "draft" ||
-                          invoice.status === "issued" ||
-                          invoice.status === "partially_paid") && (
-                          <EndEffectiveDatedButton
-                            id={invoice.id}
-                            action={cancelInvoice}
-                            triggerLabel={
-                              invoice.status === "draft" ? t("discardDraft") : t("cancelInvoice")
-                            }
-                            confirmTitle={
-                              invoice.status === "draft" ? t("discardDraft") : t("cancelInvoice")
-                            }
-                            confirmDescription={
-                              invoice.status === "draft"
-                                ? t("discardDraftConfirm")
-                                : t("cancelInvoiceConfirm")
-                            }
-                            successMessage={
-                              invoice.status === "draft" ? t("discardDraftSuccess") : t("cancelSuccess")
-                            }
-                            cancelLabel={tCommon("cancel")}
-                            confirmLabel={tCommon("confirm")}
-                          />
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <InvoicesTable
+          buildingId={building.id}
+          canPublish={canPublish}
+          canDiscard={canDiscard}
+          invoices={invoices.map((invoice) => ({
+            id: invoice.id,
+            invoiceNumber: invoice.invoice_number,
+            unitNumber: embedOne(invoice.units)?.unit_number ?? "",
+            periodStart: invoice.billing_period_start,
+            periodEnd: invoice.billing_period_end,
+            totalAmount: invoice.total_amount,
+            status: invoice.status,
+          }))}
+        />
       )}
     </main>
   );

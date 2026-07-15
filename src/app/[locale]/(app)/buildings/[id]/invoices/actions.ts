@@ -545,6 +545,37 @@ export async function cancelInvoice(invoiceId: string) {
   return { error: null };
 }
 
+// Bulk counterpart for the invoices list's mass-selection actions.
+// Scoped to draft/issued/partially_paid same as the per-row cancel
+// button already is -- a paid or already-cancelled row slipping into
+// a mixed selection is silently skipped rather than erroring the
+// whole batch.
+export async function cancelInvoices(invoiceIds: string[]) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("invoices")
+    .update({ status: "cancelled" })
+    .in("id", invoiceIds)
+    .in("status", ["draft", "issued", "partially_paid"])
+    .select("id");
+
+  if (error) {
+    return { error: error.message, cancelled: 0 };
+  }
+
+  const cancelledIds = (data ?? []).map((i) => i.id);
+  if (cancelledIds.length > 0) {
+    await supabase
+      .from("payments")
+      .update({ matched_invoice_id: null })
+      .in("matched_invoice_id", cancelledIds);
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null, cancelled: cancelledIds.length };
+}
+
 // Generated invoices land in draft (see the invoices.status default)
 // and stay invisible to anyone without generate-or-publish rights
 // until this runs -- the actual review step. .eq("status", "draft")
