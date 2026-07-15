@@ -64,7 +64,9 @@ export default async function BuildingInvoicesPage({
       .order("sort_order", { ascending: true }),
     supabase
       .from("invoices")
-      .select("id, billing_period_start, billing_period_end, total_amount, status, units!inner(unit_number, building_id)")
+      .select(
+        "id, invoice_number, billing_period_start, billing_period_end, total_amount, status, units!inner(unit_number, building_id)"
+      )
       .eq("units.building_id", id)
       .order("billing_period_start", { ascending: false }),
     getBillingDefaults(supabase, id),
@@ -140,6 +142,7 @@ export default async function BuildingInvoicesPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>{t("invoiceNumberLabel")}</TableHead>
                 <TableHead>{tUnits("unitNumberLabel")}</TableHead>
                 <TableHead>{t("period")}</TableHead>
                 <TableHead>{t("totalAmount")}</TableHead>
@@ -150,6 +153,9 @@ export default async function BuildingInvoicesPage({
             <TableBody>
               {invoices.map((invoice) => (
                 <TableRow key={invoice.id}>
+                  <TableCell className="text-muted-foreground">
+                    {invoice.invoice_number ?? "—"}
+                  </TableCell>
                   <TableCell className="font-medium">{embedOne(invoice.units)?.unit_number}</TableCell>
                   <TableCell>
                     {invoice.billing_period_start} – {invoice.billing_period_end}

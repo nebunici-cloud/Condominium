@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { statusVariant, statusLabelKeys } from "../invoice-status";
@@ -44,13 +44,12 @@ export default async function InvoiceDetailPage({
 }) {
   const { id, invoiceId } = await params;
   const t = await getTranslations("invoices");
-  const tUnits = await getTranslations("units");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
 
   const { data: building } = await supabase
     .from("buildings")
-    .select("id, name, association_id, associations(name)")
+    .select("id, name, address, association_id, associations(name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -61,7 +60,7 @@ export default async function InvoiceDetailPage({
   const { data: invoice } = await supabase
     .from("invoices")
     .select(
-      "id, billing_period_start, billing_period_end, total_amount, status, units!inner(unit_number, building_id)"
+      "id, invoice_number, issued_at, due_date, billing_period_start, billing_period_end, total_amount, status, unit_id, units!inner(unit_number, building_id)"
     )
     .eq("id", invoiceId)
     .eq("units.building_id", id)
@@ -75,14 +74,28 @@ export default async function InvoiceDetailPage({
   const capabilities = context?.capabilities ?? [];
   const canEditLines = invoice.status === "draft" && capabilities.includes("finance.invoice.generate");
 
-  const { data: lines } = await supabase
-    .from("invoice_lines")
-    .select("id, amount, adjustment_amount, adjustment_reason, calculation_input, fee_types(label)")
-    .eq("invoice_id", invoiceId)
-    .order("created_at", { ascending: true });
+  const [{ data: lines }, { data: ownerships }] = await Promise.all([
+    supabase
+      .from("invoice_lines")
+      .select("id, amount, adjustment_amount, adjustment_reason, calculation_input, fee_types(label)")
+      .eq("invoice_id", invoiceId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("ownerships")
+      .select("share_percent, owners(full_name, personal_code)")
+      .eq("unit_id", invoice.unit_id)
+      .is("effective_to", null)
+      .order("share_percent", { ascending: false }),
+  ]);
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
   const unitNumber = embedOne(invoice.units)?.unit_number;
+  // The invoice header shows one client -- the largest current
+  // co-owner, same convention as the printed original this is modeled
+  // after (a single "Proprietar Apartament" line, not a full co-owner
+  // list).
+  const primaryOwner = embedOne(ownerships?.[0]?.owners);
+  const fullAddress = building.address ? `${building.address}, ap. ${unitNumber}` : `ap. ${unitNumber}`;
 
   const rows = (lines ?? []).map((line) => {
     const input = (line.calculation_input ?? {}) as CalculationInput;
@@ -115,24 +128,53 @@ export default async function InvoiceDetailPage({
         ]}
       />
 
-      <Card className="mb-6">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+      <Card className="mb-6 gap-0 overflow-hidden py-0">
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 px-6 py-4 text-white">
           <div>
-            <h1 className="text-2xl font-semibold">
-              {tUnits("unitNumberLabel")} {unitNumber}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {associationName} — {building.name}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {t("period")}: {invoice.billing_period_start} – {invoice.billing_period_end}
-            </p>
+            <p className="text-xs tracking-wide text-slate-300 uppercase">{associationName}</p>
+            <h1 className="text-xl font-semibold">{t("digitalInvoiceTitle")}</h1>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <Badge variant={statusVariant[invoice.status]}>{t(statusLabelKeys[invoice.status])}</Badge>
-            <p className="text-2xl font-semibold">{invoice.total_amount}</p>
+          <Badge variant={statusVariant[invoice.status]} className="text-sm">
+            {t(statusLabelKeys[invoice.status])}
+          </Badge>
+        </div>
+
+        <div className="grid gap-6 px-6 py-5 sm:grid-cols-2">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+            <dt className="text-muted-foreground">{t("invoiceNumberLabel")}</dt>
+            <dd className="font-medium">{invoice.invoice_number ?? t("draftPlaceholder")}</dd>
+            <dt className="text-muted-foreground">{t("issuedAtLabel")}</dt>
+            <dd className="font-medium">
+              {invoice.issued_at ? invoice.issued_at.slice(0, 10) : "—"}
+            </dd>
+            <dt className="text-muted-foreground">{t("dueDateLabel")}</dt>
+            <dd className="font-medium">{invoice.due_date ?? "—"}</dd>
+            <dt className="text-muted-foreground">{t("period")}</dt>
+            <dd className="font-medium">
+              {invoice.billing_period_start} – {invoice.billing_period_end}
+            </dd>
+          </dl>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+            <dt className="text-muted-foreground">{t("clientLabel")}</dt>
+            <dd className="font-medium">{primaryOwner?.full_name ?? "—"}</dd>
+            <dt className="text-muted-foreground">{t("personalCodeColumnLabel")}</dt>
+            <dd className="font-medium">{primaryOwner?.personal_code ?? "—"}</dd>
+            <dt className="text-muted-foreground">{t("addressLabel")}</dt>
+            <dd className="font-medium">{fullAddress}</dd>
+          </dl>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-6 py-4">
+          <div>
+            <p className="text-sm text-muted-foreground">{t("totalDueLabel")}</p>
+            <p className="text-3xl font-bold">{invoice.total_amount} MDL</p>
           </div>
-        </CardContent>
+          {invoice.due_date && (
+            <p className="text-sm text-muted-foreground">
+              {t("dueDateHint", { date: invoice.due_date })}
+            </p>
+          )}
+        </div>
       </Card>
 
       {rows.length === 0 ? (
@@ -140,7 +182,7 @@ export default async function InvoiceDetailPage({
       ) : (
         <div className="overflow-x-auto rounded-md border">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead>{t("feeTypeColumn")}</TableHead>
                 <TableHead className="text-right">{t("quantityColumn")}</TableHead>
