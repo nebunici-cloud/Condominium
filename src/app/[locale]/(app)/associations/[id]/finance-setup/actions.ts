@@ -67,7 +67,7 @@ export async function createFeeType(input: z.infer<typeof createFeeTypeSchema>) 
     p_fee_type_id: feeType.id,
     p_method: parsed.method,
     p_config: buildConfig(parsed.method, parsed.meterType, parsed.rate, parsed.unitOfMeasure),
-    p_approval_reference: parsed.approvalReference || null,
+    p_approval_reference: parsed.approvalReference || undefined,
   });
 
   if (ruleError) {
@@ -107,7 +107,7 @@ export async function changeAllocationMethod(input: z.infer<typeof changeMethodS
     p_fee_type_id: parsed.feeTypeId,
     p_method: parsed.method,
     p_config: buildConfig(parsed.method, parsed.meterType, parsed.rate, parsed.unitOfMeasure),
-    p_approval_reference: parsed.approvalReference || null,
+    p_approval_reference: parsed.approvalReference || undefined,
   });
 
   if (error) {

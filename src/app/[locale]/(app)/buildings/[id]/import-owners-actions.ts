@@ -150,7 +150,10 @@ export async function commitOwnersImport(
 
   for (const row of validRows) {
     const unitId = unitByNumber.get(row.unitNumber.toLowerCase());
-    if (!unitId) continue;
+    // sharePercent is null only on rows the preview already flagged as
+    // invalid, but validRows arrives from the client -- re-check here
+    // rather than trusting the caller filtered correctly.
+    if (!unitId || row.sharePercent === null) continue;
 
     const key = `${row.fullName.trim().toLowerCase()}|${(row.email ?? "").trim().toLowerCase()}`;
     let ownerId = ownerByKey.get(key);

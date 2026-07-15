@@ -3,7 +3,6 @@ import { getTranslations, getLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
-import { embedOne } from "@/lib/embed";
 import {
   Table,
   TableBody,
@@ -120,14 +119,14 @@ export default async function InvoiceDetailPage({
         .lt("paid_at", invoice.billing_period_start),
     ]);
 
-  const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
-  const unitEmbed = embedOne(invoice.units);
+  const associationName = building.associations?.name ?? tAssociations("title");
+  const unitEmbed = invoice.units;
   const unitNumber = unitEmbed?.unit_number;
   // The invoice header shows one client -- the largest current
   // co-owner, same convention as the printed original this is modeled
   // after (a single "Proprietar Apartament" line, not a full co-owner
   // list).
-  const primaryOwner = embedOne(ownerships?.[0]?.owners);
+  const primaryOwner = ownerships?.[0]?.owners;
   const fullAddress = building.address ? `${building.address}, ap. ${unitNumber}` : `ap. ${unitNumber}`;
 
   // "Datorii" (Sold anterior): everything owed as of the start of
@@ -150,7 +149,7 @@ export default async function InvoiceDetailPage({
     const adjustment = line.adjustment_amount ?? 0;
     return {
       id: line.id,
-      feeTypeLabel: embedOne(line.fee_types)?.label ?? "",
+      feeTypeLabel: line.fee_types?.label ?? "",
       quantity,
       unitLabel,
       rate,
