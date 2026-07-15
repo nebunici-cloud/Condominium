@@ -128,14 +128,23 @@ export async function commitUnitsImport(
   }
 
   const supabase = await createClient();
+
+  // One reserved block from the shared per-tenant counter, not one
+  // round trip per row -- see generate_unit_account_codes.
+  const { data: accountCodes } = await supabase.rpc("generate_unit_account_codes", {
+    p_tenant_id: tenantId,
+    p_count: validRows.length,
+  });
+
   const { error } = await supabase.from("units").insert(
-    validRows.map((row) => ({
+    validRows.map((row, i) => ({
       tenant_id: tenantId,
       building_id: buildingId,
       unit_number: row.unitNumber,
       floor: row.floor,
       area_sqm: row.areaSqm,
       ownership_share_percent: row.ownershipSharePercent,
+      payment_account_code: accountCodes?.[i] ?? null,
       meters: row.meters.map((m) => ({ type: m.type, meter_id: m.meterId })),
     }))
   );

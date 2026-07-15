@@ -27,6 +27,18 @@ export async function createUnit(input: z.infer<typeof unitSchema>) {
   const parsed = unitSchema.parse(input);
   const supabase = await createClient();
 
+  // Every apartment needs a tracking code from the moment it exists
+  // (invoices, debts, and reconciliation all key off it) -- an admin
+  // can still override it, but leaving it blank now auto-generates one
+  // instead of landing null.
+  let paymentAccountCode = parsed.paymentAccountCode || null;
+  if (!paymentAccountCode) {
+    const { data: generated } = await supabase.rpc("generate_unit_account_code", {
+      p_tenant_id: parsed.tenantId,
+    });
+    paymentAccountCode = generated ?? null;
+  }
+
   const { error } = await supabase.from("units").insert({
     tenant_id: parsed.tenantId,
     building_id: parsed.buildingId,
@@ -41,7 +53,7 @@ export async function createUnit(input: z.infer<typeof unitSchema>) {
     // a manual edit) sets it, same as any other unit.
     resident_count: Number.isFinite(parsed.residentCount) ? parsed.residentCount : null,
     resident_count_is_manual: Number.isFinite(parsed.residentCount),
-    payment_account_code: parsed.paymentAccountCode || null,
+    payment_account_code: paymentAccountCode,
     meters: parsed.meters.map((m) => ({ type: normalizeMeterType(m.type), meter_id: m.meterId })),
   });
 
