@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function EndEffectiveDatedButton({
   id,
@@ -24,6 +25,7 @@ export function EndEffectiveDatedButton({
   cancelLabel,
   confirmLabel,
   confirmVariant = "destructive",
+  icon,
 }: {
   id: string;
   action: (id: string) => Promise<{ error: string | null }>;
@@ -37,6 +39,10 @@ export function EndEffectiveDatedButton({
   // publish is the one forward/positive action that reuses the same
   // id+action+confirm-dialog shape, so it needs non-destructive styling.
   confirmVariant?: "destructive" | "default";
+  // When given, renders an icon-only button (triggerLabel moves into
+  // a hover tooltip instead) -- saves space in dense rows without
+  // losing the label entirely.
+  icon?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -57,11 +63,24 @@ export function EndEffectiveDatedButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost">
-          {triggerLabel}
-        </Button>
-      </DialogTrigger>
+      {icon ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button size="icon" variant="ghost" aria-label={triggerLabel}>
+                {icon}
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{triggerLabel}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="ghost">
+            {triggerLabel}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{confirmTitle}</DialogTitle>

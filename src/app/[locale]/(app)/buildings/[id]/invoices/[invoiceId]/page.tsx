@@ -37,6 +37,13 @@ type CalculationInput = {
   quantity?: number;
   unit_of_measure?: string;
   rate?: number;
+  meter?: {
+    meter_id: string | null;
+    start_value: number;
+    start_date: string;
+    end_value: number;
+    end_date: string;
+  };
 };
 
 export default async function InvoiceDetailPage({
@@ -151,8 +158,14 @@ export default async function InvoiceDetailPage({
       adjustment,
       adjustmentReason: line.adjustment_reason,
       total: Number(line.amount) + Number(adjustment),
+      meter: input.meter,
     };
   });
+
+  // A separate reading log, same idea as the paper original's
+  // "Evidența consumului" table -- the meter behind each metered
+  // line, not just the consumption number that came out of it.
+  const meterRows = rows.filter((r) => r.meter);
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
@@ -287,6 +300,44 @@ export default async function InvoiceDetailPage({
               </TableRow>
             </TableFooter>
           </Table>
+        </div>
+      )}
+
+      {meterRows.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">{t("metersTableTitle")}</h2>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead>{t("meterIdColumn")}</TableHead>
+                  <TableHead>{t("feeTypeColumn")}</TableHead>
+                  <TableHead className="text-right">{t("meterPreviousColumn")}</TableHead>
+                  <TableHead className="text-right">{t("meterCurrentColumn")}</TableHead>
+                  <TableHead className="text-right">{t("quantityColumn")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {meterRows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.meter?.meter_id ?? "—"}</TableCell>
+                    <TableCell>{row.feeTypeLabel}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.meter?.start_value}
+                      <span className="ml-1 text-xs text-muted-foreground">({row.meter?.start_date})</span>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.meter?.end_value}
+                      <span className="ml-1 text-xs text-muted-foreground">({row.meter?.end_date})</span>
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {row.quantity} {row.unitLabel}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </main>

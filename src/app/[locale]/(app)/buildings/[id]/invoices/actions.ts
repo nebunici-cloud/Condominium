@@ -198,6 +198,10 @@ async function computeInvoiceLines(
     // the area basis). Threaded through to invoice_lines so the
     // detail page can show a real "Consum / U.M. / Tarif" breakdown.
     unitOfMeasure?: AllocationMethod;
+    // Only set when unitOfMeasure/method is by_meter -- lets the
+    // detail page show the actual meter indices behind a line, not
+    // just the consumption delta.
+    meterDetails?: Map<string, MeterReadingDetail>;
     lines: { unitId: string; unitNumber: string; amount: number; weight: number }[];
     excludedUnitIds: string[];
     error: string | null;
@@ -248,13 +252,17 @@ async function computeInvoiceLines(
       }
 
       let meterDeltas: Map<string, number> | undefined;
+      let meterDetails: Map<string, MeterReadingDetail> | undefined;
       if (unitOfMeasure === "by_meter") {
-        meterDeltas = await computeMeterDeltas(
+        meterDetails = await computeMeterReadings(
           supabase,
           unitAttrs.map((u) => u.unitId),
           config.meter_type ? normalizeMeterType(config.meter_type) : "",
           periodStart,
           periodEnd
+        );
+        meterDeltas = new Map(
+          [...meterDetails].map(([unitId, d]) => [unitId, d.endValue - d.startValue])
         );
       }
 
@@ -271,6 +279,7 @@ async function computeInvoiceLines(
         totalAmount: computedTotal,
         rate,
         unitOfMeasure,
+        meterDetails,
         lines: outcome.results.map((r) => ({
           unitId: r.unitId,
           unitNumber: unitNumberById.get(r.unitId) ?? "?",
@@ -284,15 +293,19 @@ async function computeInvoiceLines(
     }
 
     let meterDeltas: Map<string, number> | undefined;
+    let meterDetails: Map<string, MeterReadingDetail> | undefined;
 
     if (method === "by_meter") {
       const meterType = (activeRule.config as { meter_type?: string })?.meter_type;
-      meterDeltas = await computeMeterDeltas(
+      meterDetails = await computeMeterReadings(
         supabase,
         unitAttrs.map((u) => u.unitId),
         meterType ? normalizeMeterType(meterType) : "",
         periodStart,
         periodEnd
+      );
+      meterDeltas = new Map(
+        [...meterDetails].map(([unitId, d]) => [unitId, d.endValue - d.startValue])
       );
     }
 
@@ -305,6 +318,7 @@ async function computeInvoiceLines(
       allocationRuleId: activeRule.id,
       totalAmount: input.totalAmount ?? 0,
       unitOfMeasure: method,
+      meterDetails,
       lines: outcome.results.map((r) => ({
         unitId: r.unitId,
         unitNumber: unitNumberById.get(r.unitId) ?? "?",
@@ -319,28 +333,42 @@ async function computeInvoiceLines(
   return { unitAttrs, alreadyInvoicedUnitIds, perFeeType };
 }
 
-async function computeMeterDeltas(
+export type MeterReadingDetail = {
+  meterId: string | null;
+  startValue: number;
+  startDate: string;
+  endValue: number;
+  endDate: string;
+};
+
+// Same lookup as before (nearest reading at/before period end,
+// nearest at/before period start), but keeps the two raw readings
+// instead of collapsing straight to a delta -- invoice generation
+// only ever needed the difference, but the detail page wants to show
+// the actual indices (matching a real invoice's "Ind. precedent /
+// Ind. curent" columns), so both are threaded through now.
+async function computeMeterReadings(
   supabase: SupabaseClient,
   unitIds: string[],
   meterType: string,
   periodStart: string,
   periodEnd: string
-): Promise<Map<string, number>> {
-  const deltas = new Map<string, number>();
-  if (!meterType || unitIds.length === 0) return deltas;
+): Promise<Map<string, MeterReadingDetail>> {
+  const details = new Map<string, MeterReadingDetail>();
+  if (!meterType || unitIds.length === 0) return details;
 
   const { data: readings } = await supabase
     .from("meter_readings")
-    .select("unit_id, reading_value, reading_date")
+    .select("unit_id, meter_id, reading_value, reading_date")
     .in("unit_id", unitIds)
     .eq("meter_type", meterType)
     .lte("reading_date", periodEnd)
     .order("reading_date", { ascending: false });
 
-  const byUnit = new Map<string, { value: number; date: string }[]>();
+  const byUnit = new Map<string, { meterId: string | null; value: number; date: string }[]>();
   for (const r of readings ?? []) {
     const list = byUnit.get(r.unit_id) ?? [];
-    list.push({ value: r.reading_value, date: r.reading_date });
+    list.push({ meterId: r.meter_id, value: r.reading_value, date: r.reading_date });
     byUnit.set(r.unit_id, list);
   }
 
@@ -348,11 +376,17 @@ async function computeMeterDeltas(
     const endReading = list.find((r) => r.date <= periodEnd);
     const startReading = list.find((r) => r.date <= periodStart);
     if (endReading && startReading && endReading.value >= startReading.value) {
-      deltas.set(unitId, endReading.value - startReading.value);
+      details.set(unitId, {
+        meterId: endReading.meterId,
+        startValue: startReading.value,
+        startDate: startReading.date,
+        endValue: endReading.value,
+        endDate: endReading.date,
+      });
     }
   }
 
-  return deltas;
+  return details;
 }
 
 export async function previewInvoiceGeneration(input: z.infer<typeof requestSchema>) {
@@ -464,6 +498,7 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
       .map((f) => {
         const line = f.lines.find((l) => l.unitId === unit.unitId);
         if (!line) return null;
+        const meter = f.meterDetails?.get(unit.unitId);
         return {
           tenant_id: building.tenant_id,
           unit_id: unit.unitId,
@@ -477,6 +512,17 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
             quantity: line.weight,
             unit_of_measure: f.unitOfMeasure,
             ...(f.rate !== undefined ? { rate: f.rate } : {}),
+            ...(meter
+              ? {
+                  meter: {
+                    meter_id: meter.meterId,
+                    start_value: meter.startValue,
+                    start_date: meter.startDate,
+                    end_value: meter.endValue,
+                    end_date: meter.endDate,
+                  },
+                }
+              : {}),
           },
         };
       })

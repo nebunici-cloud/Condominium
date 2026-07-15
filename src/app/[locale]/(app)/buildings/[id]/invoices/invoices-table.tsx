@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { SendIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { formatPeriodLabel } from "@/lib/period";
@@ -310,6 +311,7 @@ export function InvoicesTable({
                         cancelLabel={tCommon("cancel")}
                         confirmLabel={tCommon("confirm")}
                         confirmVariant="default"
+                        icon={<SendIcon />}
                       />
                     )}
                     {canDiscard &&
@@ -335,6 +337,7 @@ export function InvoicesTable({
                           }
                           cancelLabel={tCommon("cancel")}
                           confirmLabel={tCommon("confirm")}
+                          icon={<XIcon />}
                         />
                       )}
                   </div>
