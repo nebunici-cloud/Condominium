@@ -25,6 +25,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { statusVariant, statusLabelKeys } from "./invoice-status";
@@ -39,6 +46,18 @@ type InvoiceRow = {
   totalAmount: number;
   status: string;
 };
+
+// "active" (default) hides cancelled invoices, which otherwise pile
+// up forever in the list -- they stay in the database for the audit
+// trail (consumed invoice numbers, payment history), just not in the
+// day-to-day view. Every other option is a single exact status.
+type StatusFilter = "active" | "all" | "draft" | "issued" | "partially_paid" | "paid" | "cancelled";
+
+function matchesFilter(status: string, filter: StatusFilter): boolean {
+  if (filter === "active") return status !== "cancelled";
+  if (filter === "all") return true;
+  return status === filter;
+}
 
 // Shared shape for the two mass-action buttons -- confirm dialog,
 // loading state, and toast are identical, only the action/labels
@@ -118,12 +137,23 @@ export function InvoicesTable({
   const tUnits = useTranslations("units");
   const tCommon = useTranslations("common");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
-  const allSelected = invoices.length > 0 && selected.size === invoices.length;
+  const visibleInvoices = invoices.filter((i) => matchesFilter(i.status, statusFilter));
+
+  function handleFilterChange(next: StatusFilter) {
+    setStatusFilter(next);
+    // The selection bar's counts and "select all" checkbox only ever
+    // reason about currently visible rows -- clearing on filter change
+    // avoids a stale "3 selected" that's no longer showing.
+    setSelected(new Set());
+  }
+
+  const allSelected = visibleInvoices.length > 0 && selected.size === visibleInvoices.length;
   const someSelected = selected.size > 0 && !allSelected;
 
   function toggleAll(checked: boolean) {
-    setSelected(checked ? new Set(invoices.map((i) => i.id)) : new Set());
+    setSelected(checked ? new Set(visibleInvoices.map((i) => i.id)) : new Set());
   }
 
   function toggleOne(id: string, checked: boolean) {
@@ -136,10 +166,10 @@ export function InvoicesTable({
   }
 
   const selectedIds = Array.from(selected);
-  const selectedDraftCount = invoices.filter(
+  const selectedDraftCount = visibleInvoices.filter(
     (i) => selected.has(i.id) && i.status === "draft"
   ).length;
-  const selectedCancellableCount = invoices.filter(
+  const selectedCancellableCount = visibleInvoices.filter(
     (i) => selected.has(i.id) && (i.status === "draft" || i.status === "issued" || i.status === "partially_paid")
   ).length;
 
@@ -161,6 +191,24 @@ export function InvoicesTable({
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">{t("filterLabel")}</span>
+        <Select value={statusFilter} onValueChange={(v) => handleFilterChange(v as StatusFilter)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">{t("filterActive")}</SelectItem>
+            <SelectItem value="all">{t("filterAll")}</SelectItem>
+            <SelectItem value="draft">{t(statusLabelKeys.draft)}</SelectItem>
+            <SelectItem value="issued">{t(statusLabelKeys.issued)}</SelectItem>
+            <SelectItem value="partially_paid">{t(statusLabelKeys.partially_paid)}</SelectItem>
+            <SelectItem value="paid">{t(statusLabelKeys.paid)}</SelectItem>
+            <SelectItem value="cancelled">{t(statusLabelKeys.cancelled)}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
           <span className="text-sm text-muted-foreground">
@@ -193,6 +241,9 @@ export function InvoicesTable({
         </div>
       )}
 
+      {visibleInvoices.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("filterNoMatches")}</p>
+      ) : (
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -213,7 +264,7 @@ export function InvoicesTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((invoice) => (
+            {visibleInvoices.map((invoice) => (
               <TableRow key={invoice.id}>
                 <TableCell>
                   <Checkbox
@@ -287,6 +338,7 @@ export function InvoicesTable({
           </TableBody>
         </Table>
       </div>
+      )}
     </div>
   );
 }
