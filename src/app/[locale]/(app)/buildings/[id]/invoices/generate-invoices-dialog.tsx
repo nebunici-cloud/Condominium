@@ -22,7 +22,7 @@ import {
 
 import { previewInvoiceGeneration, commitInvoiceGeneration } from "./actions";
 
-type FeeType = { id: string; label: string };
+type FeeType = { id: string; label: string; method: string | null };
 
 type Selection = Record<string, { selected: boolean; amount: string }>;
 
@@ -34,6 +34,7 @@ const methodLabelKeys: Record<string, string> = {
   per_unit: "methodPerUnit",
   per_resident: "methodPerResident",
   by_meter: "methodByMeter",
+  tariff_rate: "methodTariffRate",
 };
 
 // A fee type deviating this much from what it actually cost last
@@ -95,10 +96,18 @@ export function GenerateInvoicesDialog({
     setPreview(null);
   }
 
+  function isTariff(feeTypeId: string) {
+    return feeTypes.find((f) => f.id === feeTypeId)?.method === "tariff_rate";
+  }
+
   function buildInput() {
     const feeTypeInputs = Object.entries(selection)
-      .filter(([, v]) => v.selected && v.amount)
-      .map(([feeTypeId, v]) => ({ feeTypeId, totalAmount: Number(v.amount) }));
+      .filter(([id, v]) => v.selected && (isTariff(id) || v.amount))
+      .map(([feeTypeId, v]) =>
+        isTariff(feeTypeId)
+          ? { feeTypeId }
+          : { feeTypeId, totalAmount: Number(v.amount) }
+      );
     return { buildingId, periodStart, periodEnd, feeTypeInputs, isEdit };
   }
 
@@ -124,7 +133,9 @@ export function GenerateInvoicesDialog({
     setOpen(false);
   }
 
-  const hasSelection = Object.values(selection).some((v) => v.selected && v.amount);
+  const hasSelection = Object.entries(selection).some(
+    ([id, v]) => v.selected && (isTariff(id) || v.amount)
+  );
   const periodInvalid = Boolean(periodStart && periodEnd && periodEnd < periodStart);
 
   return (
@@ -193,7 +204,9 @@ export function GenerateInvoicesDialog({
               {feeTypes.map((feeType) => {
                 const amount = selection[feeType.id]?.amount ?? "";
                 const suggested = suggestedAmounts[feeType.id];
+                const tariff = feeType.method === "tariff_rate";
                 const deviates =
+                  !tariff &&
                   suggested !== undefined &&
                   amount !== "" &&
                   Math.abs(Number(amount) - suggested) > suggested * DEVIATION_WARNING_THRESHOLD;
@@ -211,22 +224,28 @@ export function GenerateInvoicesDialog({
                         }}
                       />
                       <span className="w-40 text-sm">{feeType.label}</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder={t("amountForPeriod")}
-                        disabled={!selection[feeType.id]?.selected}
-                        value={amount}
-                        onChange={(e) => {
-                          setSelection((s) => ({
-                            ...s,
-                            [feeType.id]: { ...s[feeType.id], amount: e.target.value },
-                          }));
-                          setPreview(null);
-                        }}
-                      />
+                      {tariff ? (
+                        <span className="text-xs text-muted-foreground">
+                          {t("tariffRateAutoLabel")}
+                        </span>
+                      ) : (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder={t("amountForPeriod")}
+                          disabled={!selection[feeType.id]?.selected}
+                          value={amount}
+                          onChange={(e) => {
+                            setSelection((s) => ({
+                              ...s,
+                              [feeType.id]: { ...s[feeType.id], amount: e.target.value },
+                            }));
+                            setPreview(null);
+                          }}
+                        />
+                      )}
                     </div>
-                    {suggested !== undefined && (
+                    {!tariff && suggested !== undefined && (
                       <p
                         className={`ml-8 text-xs ${deviates ? "text-destructive" : "text-muted-foreground"}`}
                       >
@@ -245,6 +264,11 @@ export function GenerateInvoicesDialog({
                     <span className="font-medium">{f.feeTypeLabel}</span>
                     {" — "}
                     {tFinance(methodLabelKeys[f.method])}
+                    {f.method === "tariff_rate" && !f.error && (
+                      <span className="ml-2 text-muted-foreground">
+                        {t("computedTotalLabel", { amount: f.totalAmount.toFixed(2) })}
+                      </span>
+                    )}
                     {f.error === "no_active_rule" && (
                       <Alert variant="destructive" className="mt-1">
                         <AlertTitle>{t("noActiveRuleError")}</AlertTitle>

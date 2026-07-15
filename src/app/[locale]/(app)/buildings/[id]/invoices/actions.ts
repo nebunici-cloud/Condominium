@@ -6,14 +6,20 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import {
   calculateFeeAllocation,
+  calculateTariffAllocation,
   type AllocationMethod,
+  type TariffUnitOfMeasure,
   type UnitAttributes,
 } from "@/lib/allocation-engine";
 import { normalizeMeterType } from "@/lib/meter-types";
 
 const feeTypeInputSchema = z.object({
   feeTypeId: z.string().uuid(),
-  totalAmount: z.number().positive(),
+  // Only required for methods that divide an admin-typed total.
+  // tariff_rate has no total to type -- its amount is rate x each
+  // unit's own quantity, computed from the active rule's config, so
+  // the total is an output, never an input.
+  totalAmount: z.number().positive().optional(),
 });
 
 const requestSchema = z.object({
@@ -154,7 +160,7 @@ async function computeInvoiceLines(
   buildingId: string,
   periodStart: string,
   periodEnd: string,
-  feeTypeInputs: { feeTypeId: string; totalAmount: number }[],
+  feeTypeInputs: { feeTypeId: string; totalAmount?: number }[],
   isEdit = false
 ) {
   const { data: units } = await supabase
@@ -216,7 +222,7 @@ async function computeInvoiceLines(
         feeTypeLabel: feeType?.label ?? "?",
         method: "per_unit",
         allocationRuleId: "",
-        totalAmount: input.totalAmount,
+        totalAmount: input.totalAmount ?? 0,
         lines: [],
         excludedUnitIds: [],
         error: "no_active_rule",
@@ -225,6 +231,60 @@ async function computeInvoiceLines(
     }
 
     const method = activeRule.method as AllocationMethod;
+    const unitNumberById = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
+
+    if (method === "tariff_rate") {
+      const config = activeRule.config as { rate?: number; unit_of_measure?: TariffUnitOfMeasure; meter_type?: string };
+      const rate = config.rate;
+      const unitOfMeasure = config.unit_of_measure;
+
+      if (rate === undefined || !unitOfMeasure) {
+        perFeeType.push({
+          feeTypeId: feeType.id,
+          feeTypeLabel: feeType.label,
+          method,
+          allocationRuleId: activeRule.id,
+          totalAmount: 0,
+          lines: [],
+          excludedUnitIds: [],
+          error: "no_active_rule",
+        });
+        continue;
+      }
+
+      let meterDeltas: Map<string, number> | undefined;
+      if (unitOfMeasure === "by_meter") {
+        meterDeltas = await computeMeterDeltas(
+          supabase,
+          unitAttrs.map((u) => u.unitId),
+          config.meter_type ? normalizeMeterType(config.meter_type) : "",
+          periodStart,
+          periodEnd
+        );
+      }
+
+      const outcome = calculateTariffAllocation(unitOfMeasure, rate, unitAttrs, meterDeltas);
+      // No admin-typed total to echo back -- this *is* the total,
+      // summed from what each unit was actually charged.
+      const computedTotal = outcome.results.reduce((sum, r) => sum + r.amount, 0);
+
+      perFeeType.push({
+        feeTypeId: feeType.id,
+        feeTypeLabel: feeType.label,
+        method,
+        allocationRuleId: activeRule.id,
+        totalAmount: computedTotal,
+        lines: outcome.results.map((r) => ({
+          unitId: r.unitId,
+          unitNumber: unitNumberById.get(r.unitId) ?? "?",
+          amount: r.amount,
+        })),
+        excludedUnitIds: outcome.excludedUnitIds,
+        error: outcome.error,
+      });
+      continue;
+    }
+
     let meterDeltas: Map<string, number> | undefined;
 
     if (method === "by_meter") {
@@ -238,15 +298,14 @@ async function computeInvoiceLines(
       );
     }
 
-    const outcome = calculateFeeAllocation(method, unitAttrs, input.totalAmount, meterDeltas);
-    const unitNumberById = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
+    const outcome = calculateFeeAllocation(method, unitAttrs, input.totalAmount ?? 0, meterDeltas);
 
     perFeeType.push({
       feeTypeId: feeType.id,
       feeTypeLabel: feeType.label,
       method,
       allocationRuleId: activeRule.id,
-      totalAmount: input.totalAmount,
+      totalAmount: input.totalAmount ?? 0,
       lines: outcome.results.map((r) => ({
         unitId: r.unitId,
         unitNumber: unitNumberById.get(r.unitId) ?? "?",
@@ -506,4 +565,39 @@ export async function publishDraftInvoices(invoiceIds: string[]) {
 
   revalidatePath("/", "layout");
   return { error: null, published: data?.length ?? 0 };
+}
+
+const adjustmentSchema = z.object({
+  invoiceLineId: z.string().uuid(),
+  adjustmentAmount: z.number(),
+  adjustmentReason: z.string().trim().optional(),
+});
+
+// invoice_lines_update RLS already scopes this to draft-status
+// invoices and the finance.invoice.generate capability -- the reason
+// requirement below just mirrors the DB check constraint so the form
+// fails with a clear message instead of a raw constraint-violation error.
+export async function setLineAdjustment(input: z.infer<typeof adjustmentSchema>) {
+  const parsed = adjustmentSchema.parse(input);
+
+  if (parsed.adjustmentAmount !== 0 && !parsed.adjustmentReason) {
+    return { error: "Reason required" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("invoice_lines")
+    .update({
+      adjustment_amount: parsed.adjustmentAmount,
+      adjustment_reason: parsed.adjustmentAmount === 0 ? null : parsed.adjustmentReason,
+    })
+    .eq("id", parsed.invoiceLineId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
 }

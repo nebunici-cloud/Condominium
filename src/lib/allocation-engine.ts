@@ -5,7 +5,20 @@
 // auditable place, matching the spec's requirement that every
 // calculation run be reproducible from its inputs.
 
-export type AllocationMethod = "cota_parte" | "by_area" | "per_unit" | "per_resident" | "by_meter";
+export type AllocationMethod =
+  | "cota_parte"
+  | "by_area"
+  | "per_unit"
+  | "per_resident"
+  | "by_meter"
+  | "tariff_rate";
+
+// tariff_rate doesn't divide an admin-typed total by weight -- it
+// multiplies a standing rate by each unit's own quantity directly (a
+// real invoice's "2.20 lei/m²" line, not "our area-share of a shared
+// pot"). unit_of_measure picks which quantity, reusing the exact same
+// per-unit lookups the other methods already use.
+export type TariffUnitOfMeasure = "cota_parte" | "by_area" | "per_unit" | "per_resident" | "by_meter";
 
 export type UnitAttributes = {
   unitId: string;
@@ -101,12 +114,12 @@ export function calculateFeeAllocation(
   };
 }
 
-function getUnitWeight(
-  method: AllocationMethod,
+function getUnitQuantity(
+  measure: TariffUnitOfMeasure,
   unit: UnitAttributes,
   meterDeltas?: Map<string, number>
 ): number | null {
-  switch (method) {
+  switch (measure) {
     case "cota_parte":
       return unit.ownershipSharePercent;
     case "by_area":
@@ -120,4 +133,48 @@ function getUnitWeight(
       return delta === undefined ? null : delta;
     }
   }
+}
+
+function getUnitWeight(
+  method: AllocationMethod,
+  unit: UnitAttributes,
+  meterDeltas?: Map<string, number>
+): number | null {
+  if (method === "tariff_rate") return null;
+  return getUnitQuantity(method, unit, meterDeltas);
+}
+
+export type TariffOutcome = {
+  results: AllocationLineResult[];
+  excludedUnitIds: string[];
+  error: "no_weight_data" | null;
+};
+
+/**
+ * A unit's line = rate x its own quantity for `unitOfMeasure`, not a
+ * proportional split of a pot -- the batch total is a sum of these,
+ * never an input. Missing-data exclusion works the same as
+ * calculateFeeAllocation: a unit with no value for the chosen measure
+ * is excluded and flagged, a unit whose value is legitimately zero is
+ * charged zero without being flagged.
+ */
+export function calculateTariffAllocation(
+  unitOfMeasure: TariffUnitOfMeasure,
+  rate: number,
+  units: UnitAttributes[],
+  meterDeltas?: Map<string, number>
+): TariffOutcome {
+  const excludedUnitIds: string[] = [];
+  const results: AllocationLineResult[] = [];
+
+  for (const unit of units) {
+    const quantity = getUnitQuantity(unitOfMeasure, unit, meterDeltas);
+    if (quantity === null) {
+      excludedUnitIds.push(unit.unitId);
+      continue;
+    }
+    results.push({ unitId: unit.unitId, amount: round2(rate * quantity), weight: quantity });
+  }
+
+  return { results, excludedUnitIds, error: results.length === 0 ? "no_weight_data" : null };
 }

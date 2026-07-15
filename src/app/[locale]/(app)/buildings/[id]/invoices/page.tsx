@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
@@ -13,28 +14,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 import { PublishDraftsButton } from "./publish-drafts-button";
 import { cancelInvoice, publishInvoice, getBillingDefaults, getDraftBatchAmounts } from "./actions";
-
-const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "secondary",
-  issued: "outline",
-  partially_paid: "secondary",
-  paid: "default",
-  cancelled: "destructive",
-};
-
-const statusLabelKeys: Record<string, string> = {
-  draft: "statusDraft",
-  issued: "statusIssued",
-  partially_paid: "statusPartiallyPaid",
-  paid: "statusPaid",
-  cancelled: "statusCancelled",
-};
+import { statusVariant, statusLabelKeys } from "./invoice-status";
 
 export default async function BuildingInvoicesPage({
   params,
@@ -71,7 +58,7 @@ export default async function BuildingInvoicesPage({
   const [{ data: feeTypes }, { data: invoices }, billingDefaults] = await Promise.all([
     supabase
       .from("fee_types")
-      .select("id, label")
+      .select("id, label, allocation_rules(method, is_active)")
       .eq("association_id", building.association_id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
@@ -82,6 +69,12 @@ export default async function BuildingInvoicesPage({
       .order("billing_period_start", { ascending: false }),
     getBillingDefaults(supabase, id),
   ]);
+
+  const resolvedFeeTypes = (feeTypes ?? []).map((f) => ({
+    id: f.id,
+    label: f.label,
+    method: f.allocation_rules.find((r) => r.is_active)?.method ?? null,
+  }));
 
   const draftInvoices = (invoices ?? []).filter((i) => i.status === "draft");
   const draftInvoiceIds = draftInvoices.map((i) => i.id);
@@ -118,7 +111,7 @@ export default async function BuildingInvoicesPage({
           {capabilities.includes("finance.invoice.generate") && draftPeriod && (
             <GenerateInvoicesDialog
               buildingId={building.id}
-              feeTypes={feeTypes ?? []}
+              feeTypes={resolvedFeeTypes}
               defaultPeriodStart={draftPeriod.start}
               defaultPeriodEnd={draftPeriod.end}
               suggestedAmounts={draftAmounts}
@@ -131,7 +124,7 @@ export default async function BuildingInvoicesPage({
           {capabilities.includes("finance.invoice.generate") && (
             <GenerateInvoicesDialog
               buildingId={building.id}
-              feeTypes={feeTypes ?? []}
+              feeTypes={resolvedFeeTypes}
               defaultPeriodStart={billingDefaults.defaultPeriodStart}
               defaultPeriodEnd={billingDefaults.defaultPeriodEnd}
               suggestedAmounts={billingDefaults.suggestedAmounts}
@@ -169,6 +162,11 @@ export default async function BuildingInvoicesPage({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
+                      <Button asChild size="sm" variant="ghost">
+                        <Link href={`/buildings/${building.id}/invoices/${invoice.id}`}>
+                          {t("viewDetails")}
+                        </Link>
+                      </Button>
                       {canPublish && invoice.status === "draft" && (
                         <EndEffectiveDatedButton
                           id={invoice.id}

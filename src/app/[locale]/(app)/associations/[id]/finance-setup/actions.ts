@@ -6,11 +6,28 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeMeterType } from "@/lib/meter-types";
 
-const methodSchema = z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter"]);
+const methodSchema = z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter", "tariff_rate"]);
+const tariffUnitOfMeasureSchema = z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter"]);
 
-function buildConfig(method: z.infer<typeof methodSchema>, meterType?: string) {
+function buildConfig(
+  method: z.infer<typeof methodSchema>,
+  meterType?: string,
+  rate?: number,
+  unitOfMeasure?: z.infer<typeof tariffUnitOfMeasureSchema>
+) {
   if (method === "by_meter") {
     return { meter_type: meterType?.trim() ? normalizeMeterType(meterType) : "cold_water" };
+  }
+  if (method === "tariff_rate") {
+    const measure = unitOfMeasure ?? "per_unit";
+    const config: { rate: number; unit_of_measure: string; meter_type?: string } = {
+      rate: rate ?? 0,
+      unit_of_measure: measure,
+    };
+    if (measure === "by_meter") {
+      config.meter_type = meterType?.trim() ? normalizeMeterType(meterType) : "cold_water";
+    }
+    return config;
   }
   return {};
 }
@@ -22,6 +39,9 @@ const createFeeTypeSchema = z.object({
   label: z.string().trim().min(1),
   method: methodSchema,
   meterType: z.string().trim().optional(),
+  rate: z.number().positive().optional(),
+  unitOfMeasure: tariffUnitOfMeasureSchema.optional(),
+  approvalReference: z.string().trim().optional(),
 });
 
 export async function createFeeType(input: z.infer<typeof createFeeTypeSchema>) {
@@ -46,7 +66,8 @@ export async function createFeeType(input: z.infer<typeof createFeeTypeSchema>) 
   const { error: ruleError } = await supabase.rpc("set_allocation_rule", {
     p_fee_type_id: feeType.id,
     p_method: parsed.method,
-    p_config: buildConfig(parsed.method, parsed.meterType),
+    p_config: buildConfig(parsed.method, parsed.meterType, parsed.rate, parsed.unitOfMeasure),
+    p_approval_reference: parsed.approvalReference || null,
   });
 
   if (ruleError) {
@@ -73,6 +94,9 @@ const changeMethodSchema = z.object({
   feeTypeId: z.string().uuid(),
   method: methodSchema,
   meterType: z.string().trim().optional(),
+  rate: z.number().positive().optional(),
+  unitOfMeasure: tariffUnitOfMeasureSchema.optional(),
+  approvalReference: z.string().trim().optional(),
 });
 
 export async function changeAllocationMethod(input: z.infer<typeof changeMethodSchema>) {
@@ -82,7 +106,8 @@ export async function changeAllocationMethod(input: z.infer<typeof changeMethodS
   const { error } = await supabase.rpc("set_allocation_rule", {
     p_fee_type_id: parsed.feeTypeId,
     p_method: parsed.method,
-    p_config: buildConfig(parsed.method, parsed.meterType),
+    p_config: buildConfig(parsed.method, parsed.meterType, parsed.rate, parsed.unitOfMeasure),
+    p_approval_reference: parsed.approvalReference || null,
   });
 
   if (error) {

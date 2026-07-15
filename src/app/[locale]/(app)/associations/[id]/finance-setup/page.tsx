@@ -23,6 +23,15 @@ const methodLabelKeys: Record<string, string> = {
   per_unit: "methodPerUnit",
   per_resident: "methodPerResident",
   by_meter: "methodByMeter",
+  tariff_rate: "methodTariffRate",
+};
+
+const unitOfMeasureLabelKeys: Record<string, string> = {
+  cota_parte: "unitOfMeasureShare",
+  by_area: "unitOfMeasureArea",
+  per_unit: "unitOfMeasurePerUnit",
+  per_resident: "unitOfMeasureResident",
+  by_meter: "unitOfMeasureMeter",
 };
 
 export default async function FinanceSetupPage({
@@ -57,7 +66,7 @@ export default async function FinanceSetupPage({
       .order("sort_order", { ascending: true }),
     supabase
       .from("fee_types")
-      .select("id, key, label, allocation_rules(method, version, is_active)")
+      .select("id, key, label, allocation_rules(method, version, is_active, config, approval_reference)")
       .eq("association_id", id)
       .order("created_at", { ascending: true }),
   ]);
@@ -122,6 +131,10 @@ export default async function FinanceSetupPage({
           <div className="grid gap-3">
             {feeTypes.map((feeType) => {
               const activeRule = feeType.allocation_rules.find((r) => r.is_active);
+              const tariffConfig =
+                activeRule?.method === "tariff_rate"
+                  ? (activeRule.config as { rate?: number; unit_of_measure?: string })
+                  : null;
               return (
                 <Card key={feeType.id}>
                   <CardHeader>
@@ -131,6 +144,21 @@ export default async function FinanceSetupPage({
                         ? `${t("currentMethod")}: ${t(methodLabelKeys[activeRule.method])} (${t("version", { version: activeRule.version })})`
                         : t("noActiveRule")}
                     </CardDescription>
+                    {tariffConfig && (
+                      <CardDescription>
+                        {t("tariffRateSummary", {
+                          rate: tariffConfig.rate ?? 0,
+                          unitOfMeasure: t(
+                            unitOfMeasureLabelKeys[tariffConfig.unit_of_measure ?? "per_unit"]
+                          ),
+                        })}
+                      </CardDescription>
+                    )}
+                    {activeRule?.approval_reference && (
+                      <CardDescription>
+                        {t("approvalReferenceDisplay", { reference: activeRule.approval_reference })}
+                      </CardDescription>
+                    )}
                   </CardHeader>
                   <CardContent className="flex items-center gap-2">
                     <Badge variant="outline">{feeType.key}</Badge>
