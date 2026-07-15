@@ -12,6 +12,7 @@ import {
   type UnitAttributes,
 } from "@/lib/allocation-engine";
 import { normalizeMeterType } from "@/lib/meter-types";
+import { addDays, startOfMonth, endOfMonth } from "@/lib/period";
 
 const feeTypeInputSchema = z.object({
   feeTypeId: z.string().uuid(),
@@ -41,22 +42,6 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function startOfMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().slice(0, 10);
-}
-
-function endOfMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
 }
 
 async function sumInvoiceLinesForPeriod(

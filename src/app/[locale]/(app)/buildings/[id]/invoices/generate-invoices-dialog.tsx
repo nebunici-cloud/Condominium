@@ -20,6 +20,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+import { monthToRange, periodToMonth } from "@/lib/period";
+
 import { previewInvoiceGeneration, commitInvoiceGeneration } from "./actions";
 
 type FeeType = { id: string; label: string; method: string | null };
@@ -46,14 +48,14 @@ export function GenerateInvoicesDialog({
   buildingId,
   feeTypes,
   defaultPeriodStart,
-  defaultPeriodEnd,
   suggestedAmounts,
   mode = "create",
 }: {
   buildingId: string;
   feeTypes: FeeType[];
+  // A full calendar month is always derived from this alone (see
+  // monthToRange) -- there's no independent "default end" to pick.
   defaultPeriodStart: string;
-  defaultPeriodEnd: string;
   suggestedAmounts: Record<string, number>;
   // "edit" re-opens an existing draft batch: the period is locked (it
   // already occupies that period, nothing to pick), suggestedAmounts
@@ -82,16 +84,16 @@ export function GenerateInvoicesDialog({
   }
 
   const [open, setOpen] = useState(false);
-  const [periodStart, setPeriodStart] = useState(defaultPeriodStart);
-  const [periodEnd, setPeriodEnd] = useState(defaultPeriodEnd);
+  const [periodMonth, setPeriodMonth] = useState(periodToMonth(defaultPeriodStart));
   const [selection, setSelection] = useState<Selection>(defaultSelection);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
+  const { start: periodStart, end: periodEnd } = monthToRange(periodMonth);
+
   function reset() {
-    setPeriodStart(defaultPeriodStart);
-    setPeriodEnd(defaultPeriodEnd);
+    setPeriodMonth(periodToMonth(defaultPeriodStart));
     setSelection(defaultSelection());
     setPreview(null);
   }
@@ -136,7 +138,6 @@ export function GenerateInvoicesDialog({
   const hasSelection = Object.entries(selection).some(
     ([id, v]) => v.selected && (isTariff(id) || v.amount)
   );
-  const periodInvalid = Boolean(periodStart && periodEnd && periodEnd < periodStart);
 
   return (
     <Dialog
@@ -169,35 +170,18 @@ export function GenerateInvoicesDialog({
           <p className="text-sm text-muted-foreground">{t("noFeeTypesConfigured")}</p>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t("periodStartLabel")}</Label>
-                <Input
-                  type="date"
-                  value={periodStart}
-                  disabled={isEdit}
-                  onChange={(e) => {
-                    setPeriodStart(e.target.value);
-                    setPreview(null);
-                  }}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("periodEndLabel")}</Label>
-                <Input
-                  type="date"
-                  value={periodEnd}
-                  disabled={isEdit}
-                  onChange={(e) => {
-                    setPeriodEnd(e.target.value);
-                    setPreview(null);
-                  }}
-                />
-              </div>
+            <div className="grid max-w-48 gap-2">
+              <Label>{t("periodLabel")}</Label>
+              <Input
+                type="month"
+                value={periodMonth}
+                disabled={isEdit}
+                onChange={(e) => {
+                  setPeriodMonth(e.target.value);
+                  setPreview(null);
+                }}
+              />
             </div>
-            {periodInvalid && (
-              <p className="text-xs text-destructive">{t("periodInvalid")}</p>
-            )}
 
             <div className="grid gap-2">
               <Label>{t("selectFeeTypes")}</Label>
@@ -313,7 +297,7 @@ export function GenerateInvoicesDialog({
               {!preview ? (
                 <Button
                   onClick={handlePreview}
-                  disabled={previewing || !hasSelection || !periodStart || !periodEnd || periodInvalid}
+                  disabled={previewing || !hasSelection || !periodMonth}
                 >
                   {previewing ? t("previewing") : t("preview")}
                 </Button>

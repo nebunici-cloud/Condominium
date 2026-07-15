@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
+
+import { formatPeriodLabel } from "@/lib/period";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,7 @@ type InvoiceRow = {
   unitNumber: string;
   periodStart: string;
   periodEnd: string;
+  issuedAt: string | null;
   totalAmount: number;
   status: string;
 };
@@ -136,6 +139,7 @@ export function InvoicesTable({
   const t = useTranslations("invoices");
   const tUnits = useTranslations("units");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
@@ -259,6 +263,7 @@ export function InvoicesTable({
               <TableHead>{t("invoiceNumberLabel")}</TableHead>
               <TableHead>{tUnits("unitNumberLabel")}</TableHead>
               <TableHead>{t("period")}</TableHead>
+              <TableHead>{t("issuedAtLabel")}</TableHead>
               <TableHead>{t("totalAmount")}</TableHead>
               <TableHead>{tCommon("status")}</TableHead>
               <TableHead />
@@ -282,8 +287,9 @@ export function InvoicesTable({
                   {invoice.invoiceNumber ?? "—"}
                 </TableCell>
                 <TableCell className="font-medium">{invoice.unitNumber}</TableCell>
-                <TableCell>
-                  {invoice.periodStart} – {invoice.periodEnd}
+                <TableCell>{formatPeriodLabel(invoice.periodStart, invoice.periodEnd, locale)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {invoice.issuedAt ? invoice.issuedAt.slice(0, 10) : "—"}
                 </TableCell>
                 <TableCell>{invoice.totalAmount}</TableCell>
                 <TableCell>

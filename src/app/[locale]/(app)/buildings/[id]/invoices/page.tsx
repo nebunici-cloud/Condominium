@@ -51,7 +51,7 @@ export default async function BuildingInvoicesPage({
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, billing_period_start, billing_period_end, total_amount, status, units!inner(unit_number, building_id)"
+        "id, invoice_number, issued_at, billing_period_start, billing_period_end, total_amount, status, units!inner(unit_number, building_id)"
       )
       .eq("units.building_id", id)
       .order("billing_period_start", { ascending: false }),
@@ -101,7 +101,6 @@ export default async function BuildingInvoicesPage({
               buildingId={building.id}
               feeTypes={resolvedFeeTypes}
               defaultPeriodStart={draftPeriod.start}
-              defaultPeriodEnd={draftPeriod.end}
               suggestedAmounts={draftAmounts}
               mode="edit"
             />
@@ -114,7 +113,6 @@ export default async function BuildingInvoicesPage({
               buildingId={building.id}
               feeTypes={resolvedFeeTypes}
               defaultPeriodStart={billingDefaults.defaultPeriodStart}
-              defaultPeriodEnd={billingDefaults.defaultPeriodEnd}
               suggestedAmounts={billingDefaults.suggestedAmounts}
             />
           )}
@@ -134,6 +132,7 @@ export default async function BuildingInvoicesPage({
             unitNumber: embedOne(invoice.units)?.unit_number ?? "",
             periodStart: invoice.billing_period_start,
             periodEnd: invoice.billing_period_end,
+            issuedAt: invoice.issued_at,
             totalAmount: invoice.total_amount,
             status: invoice.status,
           }))}

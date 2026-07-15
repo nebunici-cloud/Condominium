@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { computeOutstandingBalance } from "@/lib/balance";
+import { formatPeriodLabel } from "@/lib/period";
 
 import { statusHeaderClasses, statusLabelKeys } from "../invoice-status";
 import { AdjustmentDialog } from "./adjustment-dialog";
@@ -46,6 +47,7 @@ export default async function InvoiceDetailPage({
   const { id, invoiceId } = await params;
   const t = await getTranslations("invoices");
   const tAssociations = await getTranslations("associations");
+  const locale = await getLocale();
   const supabase = await createClient();
 
   const { data: building } = await supabase
@@ -61,7 +63,7 @@ export default async function InvoiceDetailPage({
   const { data: invoice } = await supabase
     .from("invoices")
     .select(
-      "id, invoice_number, issued_at, due_date, billing_period_start, billing_period_end, total_amount, status, unit_id, units!inner(unit_number, building_id, payment_account_code)"
+      "id, invoice_number, due_date, billing_period_start, billing_period_end, total_amount, status, unit_id, units!inner(unit_number, building_id, payment_account_code)"
     )
     .eq("id", invoiceId)
     .eq("units.building_id", id)
@@ -160,7 +162,9 @@ export default async function InvoiceDetailPage({
           { label: associationName, href: `/associations/${building.association_id}` },
           { label: building.name, href: `/buildings/${building.id}` },
           { label: t("title"), href: `/buildings/${building.id}/invoices` },
-          { label: `${unitNumber} — ${invoice.billing_period_start}` },
+          {
+            label: `${unitNumber} — ${formatPeriodLabel(invoice.billing_period_start, invoice.billing_period_end, locale)}`,
+          },
         ]}
       />
 
@@ -179,15 +183,11 @@ export default async function InvoiceDetailPage({
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
             <dt className="text-muted-foreground">{t("invoiceNumberLabel")}</dt>
             <dd className="font-medium">{invoice.invoice_number ?? t("draftPlaceholder")}</dd>
-            <dt className="text-muted-foreground">{t("issuedAtLabel")}</dt>
-            <dd className="font-medium">
-              {invoice.issued_at ? invoice.issued_at.slice(0, 10) : "—"}
-            </dd>
             <dt className="text-muted-foreground">{t("dueDateLabel")}</dt>
             <dd className="font-medium">{invoice.due_date ?? "—"}</dd>
             <dt className="text-muted-foreground">{t("period")}</dt>
             <dd className="font-medium">
-              {invoice.billing_period_start} – {invoice.billing_period_end}
+              {formatPeriodLabel(invoice.billing_period_start, invoice.billing_period_end, locale)}
             </dd>
           </dl>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">

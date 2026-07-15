@@ -451,6 +451,7 @@
     "generate": "Generează facturi",
     "periodStartLabel": "Începutul perioadei",
     "periodEndLabel": "Sfârșitul perioadei",
+    "periodLabel": "Perioada de facturare",
     "selectFeeTypes": "Selectează categoriile de cheltuieli de facturat",
     "noFeeTypesConfigured": "Niciun tip de cheltuială configurat pentru această asociație. Configurează mai întâi metodele de alocare.",
     "amountForPeriod": "Sumă totală de repartizat",
