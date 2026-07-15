@@ -1,6 +1,10 @@
+import { z } from "zod";
+
 import type { createClient } from "@/lib/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+const uuidSchema = z.string().uuid();
 
 // Capability grants are tenant-wide (role_capabilities.association_id
 // is null) for org-level concerns, or scoped to one association for
@@ -29,6 +33,11 @@ export async function getUserCapabilities(
 
   let query = supabase.from("role_capabilities").select("capability_code").in("role_id", roleIds);
   if (associationId) {
+    // associationId is interpolated into a PostgREST filter string, so
+    // it must be a real UUID -- callers pass route params here, and a
+    // crafted value could otherwise inject extra filter clauses into
+    // this authorization query.
+    uuidSchema.parse(associationId);
     query = query.or(`association_id.is.null,association_id.eq.${associationId}`);
   }
   const { data: capabilityRows } = await query;

@@ -12,7 +12,7 @@ const recordMeterReadingSchema = z.object({
   meterType: z.string().trim().min(1),
   meterId: z.string().trim().optional(),
   readingValue: z.number().nonnegative(),
-  readingDate: z.string().trim().min(1),
+  readingDate: z.iso.date(),
 });
 
 export async function recordMeterReading(input: z.infer<typeof recordMeterReadingSchema>) {

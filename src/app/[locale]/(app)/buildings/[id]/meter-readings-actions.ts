@@ -15,7 +15,7 @@ const readingSchema = z.object({
 const bulkSchema = z.object({
   tenantId: z.string().uuid(),
   meterType: z.string().trim().min(1),
-  readingDate: z.string().trim().min(1),
+  readingDate: z.iso.date(),
   readings: z.array(readingSchema).min(1),
 });
 
