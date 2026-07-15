@@ -1,13 +1,19 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDevLoginEnabled } from "@/lib/dev-login";
 
 // Dev-only shortcut: signs straight into a synthetic per-role test
 // account (dev-<roleCode>@test.local), creating it the first time,
 // bypassing the email round-trip entirely by generating the sign-in
-// link directly via the admin API instead of sending it. Only works
-// when SUPABASE_SERVICE_ROLE_KEY is set -- see src/lib/supabase/admin.ts.
+// link directly via the admin API instead of sending it. Gated by
+// isDevLoginEnabled() here (not just in the page that hides the
+// panel) because a server action is an endpoint anyone can call.
 export async function devLoginAsRole(roleCode: string, locale: string, origin: string) {
+  if (!isDevLoginEnabled()) {
+    return { error: "Dev login is not enabled.", url: null };
+  }
+
   const admin = createAdminClient();
   if (!admin) {
     return { error: "Dev login is not enabled.", url: null };

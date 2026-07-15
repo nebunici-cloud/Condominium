@@ -25,8 +25,8 @@ const feeTypeInputSchema = z.object({
 
 const requestSchema = z.object({
   buildingId: z.string().uuid(),
-  periodStart: z.string(),
-  periodEnd: z.string(),
+  periodStart: z.iso.date(),
+  periodEnd: z.iso.date(),
   feeTypeInputs: z.array(feeTypeInputSchema).min(1),
   // Editing an existing draft batch re-submits the same period it
   // already occupies -- without this, that period's own draft
@@ -436,6 +436,7 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated", invoiced: 0 };
 
   const { data: building } = await supabase
     .from("buildings")
@@ -489,7 +490,7 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
     billing_period_start: parsed.periodStart,
     billing_period_end: parsed.periodEnd,
     total_amount: totalsByUnit.get(unit.unitId) ?? 0,
-    generated_by: user?.id ?? "",
+    generated_by: user.id,
   }));
 
   const lineRows = unitsToInvoice.flatMap((unit) =>

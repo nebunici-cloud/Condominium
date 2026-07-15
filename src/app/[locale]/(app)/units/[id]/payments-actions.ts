@@ -32,7 +32,7 @@ const recordPaymentSchema = z.object({
   unitId: z.string().uuid(),
   tenantId: z.string().uuid(),
   amount: z.number().positive(),
-  paidAt: z.string(),
+  paidAt: z.iso.date(),
   method: z.string().trim().optional(),
   reference: z.string().trim().optional(),
   matchedInvoiceId: z.string().uuid().optional(),

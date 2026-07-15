@@ -9,11 +9,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import { isDevLoginEnabled } from "@/lib/dev-login";
+
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
   const t = await getTranslations("auth");
-  const devLoginEnabled = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const devLoginEnabled = isDevLoginEnabled();
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
