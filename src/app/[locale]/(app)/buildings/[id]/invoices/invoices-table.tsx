@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -136,6 +136,7 @@ export function InvoicesTable({
   const t = useTranslations("invoices");
   const tUnits = useTranslations("units");
   const tCommon = useTranslations("common");
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
@@ -265,8 +266,12 @@ export function InvoicesTable({
           </TableHeader>
           <TableBody>
             {visibleInvoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell>
+              <TableRow
+                key={invoice.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/buildings/${buildingId}/invoices/${invoice.id}`)}
+              >
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selected.has(invoice.id)}
                     onCheckedChange={(checked) => toggleOne(invoice.id, checked === true)}
@@ -286,13 +291,8 @@ export function InvoicesTable({
                     {t(statusLabelKeys[invoice.status])}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
-                    <Button asChild size="sm" variant="ghost">
-                      <Link href={`/buildings/${buildingId}/invoices/${invoice.id}`}>
-                        {t("viewDetails")}
-                      </Link>
-                    </Button>
                     {canPublish && invoice.status === "draft" && (
                       <EndEffectiveDatedButton
                         id={invoice.id}
