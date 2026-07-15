@@ -5,7 +5,6 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 import { normalizeMeterType } from "@/lib/meter-types";
-import { embedOne } from "@/lib/embed";
 
 const meterSchema = z.object({
   type: z.string().trim().min(1),
@@ -30,22 +29,16 @@ export async function createUnit(input: z.infer<typeof unitSchema>) {
 
   // Every apartment needs a tracking code from the moment it exists
   // (invoices, debts, and reconciliation all key off it) -- an admin
-  // can still override it, but leaving it blank now composes one from
-  // the building's and association's codes ({assoc}-{building}-{unit
-  // number}), which is already unique on its own -- no separate
-  // counter needed at the unit level.
+  // can still override it, but leaving it blank now auto-generates a
+  // plain sequential number (no separators, no zero-padding -- both
+  // cause real problems for anything downstream that treats this as
+  // a number rather than an opaque string).
   let paymentAccountCode = parsed.paymentAccountCode || null;
   if (!paymentAccountCode) {
-    const { data: building } = await supabase
-      .from("buildings")
-      .select("code, associations(code)")
-      .eq("id", parsed.buildingId)
-      .maybeSingle();
-    const associationCode = building ? embedOne(building.associations)?.code : null;
-    paymentAccountCode =
-      building?.code && associationCode
-        ? `${associationCode}-${building.code}-${parsed.unitNumber}`
-        : null;
+    const { data: generated } = await supabase.rpc("generate_unit_code", {
+      p_tenant_id: parsed.tenantId,
+    });
+    paymentAccountCode = generated ?? null;
   }
 
   const { error } = await supabase.from("units").insert({

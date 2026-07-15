@@ -33,7 +33,7 @@ export default async function AssociationDetailPage({
 
   const { data: association } = await supabase
     .from("associations")
-    .select("id, tenant_id, name, legal_id, address, code")
+    .select("id, tenant_id, name, legal_id, address")
     .eq("id", id)
     .maybeSingle();
 
@@ -65,11 +65,6 @@ export default async function AssociationDetailPage({
           <p className="text-sm text-muted-foreground">
             {t("subtitle", { association: association.name })}
           </p>
-          {association.code && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {tAssociations("codeLabel")}: {association.code}
-            </p>
-          )}
         </div>
         <div className="flex gap-2">
           {capabilities.includes("core.association.update") && (

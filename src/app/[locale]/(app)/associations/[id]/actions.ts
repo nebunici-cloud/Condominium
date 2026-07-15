@@ -16,18 +16,11 @@ export async function createBuilding(input: z.infer<typeof buildingSchema>) {
   const parsed = buildingSchema.parse(input);
   const supabase = await createClient();
 
-  // Same idea as an association's code -- assigned once, feeds every
-  // unit's Cod Personal in this building.
-  const { data: code } = await supabase.rpc("generate_building_code", {
-    p_association_id: parsed.associationId,
-  });
-
   const { error } = await supabase.from("buildings").insert({
     tenant_id: parsed.tenantId,
     association_id: parsed.associationId,
     name: parsed.name,
     address: parsed.address || null,
-    code: code ?? null,
   });
 
   if (error) {

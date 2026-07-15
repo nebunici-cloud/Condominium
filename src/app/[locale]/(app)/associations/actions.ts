@@ -31,19 +31,11 @@ export async function createAssociation(input: z.infer<typeof associationSchema>
     return { error: "No tenant" };
   }
 
-  // A short, stable code every unit's Cod Personal and every invoice
-  // number is composed from -- assigned once at creation, never
-  // regenerated, so nothing downstream shifts later.
-  const { data: code } = await supabase.rpc("generate_association_code", {
-    p_tenant_id: membership.tenant_id,
-  });
-
   const { error } = await supabase.from("associations").insert({
     tenant_id: membership.tenant_id,
     name: parsed.name,
     legal_id: parsed.legalId || null,
     address: parsed.address || null,
-    code: code ?? null,
   });
 
   if (error) {
