@@ -166,6 +166,14 @@ export default async function FinanceSetupPage({
                       <ChangeMethodDialog
                         feeTypeId={feeType.id}
                         currentMethod={activeRule?.method ?? null}
+                        currentConfig={
+                          (activeRule?.config as {
+                            rate?: number;
+                            unit_of_measure?: string;
+                            meter_type?: string;
+                          }) ?? null
+                        }
+                        currentApprovalReference={activeRule?.approval_reference ?? null}
                       />
                     )}
                   </CardContent>

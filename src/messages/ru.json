@@ -433,7 +433,15 @@
     "approvalReferenceLabel": "Основание утверждения (необязательно)",
     "approvalReferencePlaceholder": "напр.: Решение общего собрания №3 от 12.05.2026",
     "approvalReferenceDisplay": "Утверждено: {reference}",
-    "tariffRateSummary": "Ставка: {rate} — {unitOfMeasure}"
+    "tariffRateSummary": "Ставка: {rate} — {unitOfMeasure}",
+    "basisLabel": "База расчёта",
+    "basisShare": "Доля собственности",
+    "basisArea": "Площадь",
+    "basisPerUnit": "Квартира",
+    "basisPerResident": "Заявленное число жильцов",
+    "basisMeter": "Показание счётчика",
+    "isFixedTariffLabel": "Фиксированный тариф",
+    "isFixedTariffHint": "Отметьте, чтобы задать фиксированную ставку на единицу (напр.: 50 лей/квартиру) — сумма рассчитывается автоматически, общий итог больше не вводится при генерации счетов. Оставьте не отмеченным для прежнего метода: вы вводите общую сумму на все квартиры, и она распределяется пропорционально выбранной базе расчёта."
   },
   "invoices": {
     "title": "Счета",
@@ -489,7 +497,10 @@
     "confirmEdit": "Сохранить изменения",
     "noLines": "У этого счёта нет ни одной строки.",
     "feeTypeColumn": "Вид расхода",
-    "baseAmountColumn": "Расчётная сумма",
+    "quantityColumn": "Потребление",
+    "unitOfMeasureColumnShort": "Ед. изм.",
+    "rateColumn": "Тариф",
+    "baseAmountColumn": "Ежемес. платёж",
     "adjustmentColumn": "Перерасчёт",
     "lineTotalColumn": "Итого по строке",
     "editAdjustment": "Изменить перерасчёт",

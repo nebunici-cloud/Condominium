@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -39,10 +40,10 @@ import { createFeeType } from "./actions";
 const schema = z.object({
   key: z.string().trim().min(1),
   label: z.string().trim().min(1),
-  method: z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter", "tariff_rate"]),
+  basis: z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter"]),
+  isFixedTariff: z.boolean(),
   meterType: z.string().trim().optional(),
   rate: z.string().trim().optional(),
-  unitOfMeasure: z.enum(["cota_parte", "by_area", "per_unit", "per_resident", "by_meter"]).optional(),
   approvalReference: z.string().trim().optional(),
 });
 
@@ -63,16 +64,16 @@ export function AddFeeTypeDialog({
     defaultValues: {
       key: "",
       label: "",
-      method: "cota_parte",
+      basis: "cota_parte",
+      isFixedTariff: false,
       meterType: "",
       rate: "",
-      unitOfMeasure: "per_unit",
       approvalReference: "",
     },
   });
 
-  const method = useWatch({ control: form.control, name: "method" });
-  const unitOfMeasure = useWatch({ control: form.control, name: "unitOfMeasure" });
+  const basis = useWatch({ control: form.control, name: "basis" });
+  const isFixedTariff = useWatch({ control: form.control, name: "isFixedTariff" });
 
   async function onSubmit(values: z.infer<typeof schema>) {
     setSubmitting(true);
@@ -81,10 +82,10 @@ export function AddFeeTypeDialog({
       associationId,
       key: values.key,
       label: values.label,
-      method: values.method,
-      meterType: values.meterType,
-      rate: values.rate ? Number(values.rate) : undefined,
-      unitOfMeasure: values.method === "tariff_rate" ? values.unitOfMeasure : undefined,
+      method: values.isFixedTariff ? "tariff_rate" : values.basis,
+      meterType: values.basis === "by_meter" ? values.meterType : undefined,
+      rate: values.isFixedTariff && values.rate ? Number(values.rate) : undefined,
+      unitOfMeasure: values.isFixedTariff ? values.basis : undefined,
       approvalReference: values.approvalReference,
     });
     setSubmitting(false);
@@ -141,10 +142,10 @@ export function AddFeeTypeDialog({
             />
             <FormField
               control={form.control}
-              name="method"
+              name="basis"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("methodLabel")}</FormLabel>
+                  <FormLabel>{t("basisLabel")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -152,61 +153,18 @@ export function AddFeeTypeDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="cota_parte">{t("methodCotaParte")}</SelectItem>
-                      <SelectItem value="by_area">{t("methodByArea")}</SelectItem>
-                      <SelectItem value="per_unit">{t("methodPerUnit")}</SelectItem>
-                      <SelectItem value="per_resident">{t("methodPerResident")}</SelectItem>
-                      <SelectItem value="by_meter">{t("methodByMeter")}</SelectItem>
-                      <SelectItem value="tariff_rate">{t("methodTariffRate")}</SelectItem>
+                      <SelectItem value="cota_parte">{t("basisShare")}</SelectItem>
+                      <SelectItem value="by_area">{t("basisArea")}</SelectItem>
+                      <SelectItem value="per_unit">{t("basisPerUnit")}</SelectItem>
+                      <SelectItem value="per_resident">{t("basisPerResident")}</SelectItem>
+                      <SelectItem value="by_meter">{t("basisMeter")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {method === "tariff_rate" && (
-              <>
-                <p className="text-xs text-muted-foreground">{t("tariffRateHint")}</p>
-                <FormField
-                  control={form.control}
-                  name="rate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("rateLabel")}</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" placeholder={t("ratePlaceholder")} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="unitOfMeasure"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("unitOfMeasureLabel")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="by_area">{t("unitOfMeasureArea")}</SelectItem>
-                          <SelectItem value="per_unit">{t("unitOfMeasurePerUnit")}</SelectItem>
-                          <SelectItem value="per_resident">{t("unitOfMeasureResident")}</SelectItem>
-                          <SelectItem value="cota_parte">{t("unitOfMeasureShare")}</SelectItem>
-                          <SelectItem value="by_meter">{t("unitOfMeasureMeter")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
-            {(method === "by_meter" || (method === "tariff_rate" && unitOfMeasure === "by_meter")) && (
+            {basis === "by_meter" && (
               <FormField
                 control={form.control}
                 name="meterType"
@@ -215,6 +173,39 @@ export function AddFeeTypeDialog({
                     <FormLabel>{t("meterTypeLabel")}</FormLabel>
                     <FormControl>
                       <Input placeholder={t("meterTypePlaceholder")} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              control={form.control}
+              name="isFixedTariff"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                    />
+                  </FormControl>
+                  <div className="flex flex-col gap-1">
+                    <FormLabel className="font-normal">{t("isFixedTariffLabel")}</FormLabel>
+                    <p className="text-xs text-muted-foreground">{t("isFixedTariffHint")}</p>
+                  </div>
+                </FormItem>
+              )}
+            />
+            {isFixedTariff && (
+              <FormField
+                control={form.control}
+                name="rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("rateLabel")}</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder={t("ratePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

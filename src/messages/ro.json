@@ -433,7 +433,15 @@
     "approvalReferenceLabel": "Referință aprobare (opțional)",
     "approvalReferencePlaceholder": "ex: Decizie AGA nr. 3 din 12.05.2026",
     "approvalReferenceDisplay": "Aprobat prin: {reference}",
-    "tariffRateSummary": "Rată: {rate} — {unitOfMeasure}"
+    "tariffRateSummary": "Rată: {rate} — {unitOfMeasure}",
+    "basisLabel": "Bază de calcul",
+    "basisShare": "Cotă-parte",
+    "basisArea": "Suprafață",
+    "basisPerUnit": "Apartament",
+    "basisPerResident": "Nr. persoane declarate",
+    "basisMeter": "Citire contor",
+    "isFixedTariffLabel": "Tarif fix",
+    "isFixedTariffHint": "Bifează pentru a introduce o rată fixă pe unitate (ex: 50 lei/apartament) — suma rezultă automat, nu se mai introduce un total la generarea facturii. Lasă nebifat pentru metoda veche: introduci un total pentru toate apartamentele, iar acesta se împarte proporțional după baza de calcul aleasă."
   },
   "invoices": {
     "title": "Facturi",
@@ -489,7 +497,10 @@
     "confirmEdit": "Salvează modificările",
     "noLines": "Această factură nu are nicio linie.",
     "feeTypeColumn": "Tip cheltuială",
-    "baseAmountColumn": "Sumă calculată",
+    "quantityColumn": "Consum",
+    "unitOfMeasureColumnShort": "U.M.",
+    "rateColumn": "Tarif",
+    "baseAmountColumn": "Pl. lunară",
     "adjustmentColumn": "Recalcul",
     "lineTotalColumn": "Total linie",
     "editAdjustment": "Editează recalculul",
