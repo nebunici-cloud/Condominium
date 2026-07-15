@@ -22,12 +22,20 @@ export async function getMeterTypeOptions(
 ): Promise<string[]> {
   const { data: rows } = await supabase
     .from("allocation_rules")
-    .select("config, fee_types!inner(association_id)")
-    .eq("method", "by_meter")
+    .select("method, config, fee_types!inner(association_id)")
+    .in("method", ["by_meter", "tariff_rate"])
     .eq("is_active", true)
     .eq("fee_types.association_id", associationId);
 
   const types = (rows ?? [])
+    // tariff_rate only reads a meter when its unit_of_measure is
+    // by_meter -- the other four bases (cota_parte/by_area/per_unit/
+    // per_resident) don't touch meter_type at all.
+    .filter(
+      (row) =>
+        row.method === "by_meter" ||
+        (row.config as { unit_of_measure?: string } | null)?.unit_of_measure === "by_meter"
+    )
     .map((row) => (row.config as { meter_type?: string } | null)?.meter_type)
     .filter((type): type is string => Boolean(type))
     .map(normalizeMeterType);

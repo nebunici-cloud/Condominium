@@ -31,6 +31,7 @@ export default async function BuildingDetailPage({
   const { id } = await params;
   const t = await getTranslations("units");
   const tInvoices = await getTranslations("invoices");
+  const tMeterReadings = await getTranslations("meterReadings");
   const tBuildings = await getTranslations("buildings");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
@@ -121,6 +122,13 @@ export default async function BuildingDetailPage({
           {capabilities.includes("finance.invoice.view") && (
             <Button variant="outline" asChild>
               <Link href={`/buildings/${building.id}/invoices`}>{tInvoices("title")}</Link>
+            </Button>
+          )}
+          {capabilities.includes("finance.meter_reading.record") && (
+            <Button variant="outline" asChild>
+              <Link href={`/buildings/${building.id}/meter-readings`}>
+                {tMeterReadings("bulkTitle")}
+              </Link>
             </Button>
           )}
           <ImportDataMenu

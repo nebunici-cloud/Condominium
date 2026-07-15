@@ -586,6 +586,17 @@
     "noMetersConfigured": "Acest apartament nu are contoare configurate. Adaugă unul din butonul Editează de mai sus.",
     "noReadings": "Nicio citire înregistrată încă pentru acest apartament.",
     "createSuccess": "Citirea a fost înregistrată.",
-    "createError": "Nu am putut înregistra citirea."
+    "createError": "Nu am putut înregistra citirea.",
+    "bulkTitle": "Citiri contoare (bloc)",
+    "bulkSubtitle": "Înregistrează citirile pentru toate apartamentele blocului {building} dintr-o dată, pe tip de contor.",
+    "bulkNoMeterTypesConfigured": "Niciun tip de contor configurat pentru această asociație. Configurează mai întâi o metodă de alocare după citirea contorului, din Configurare financiară.",
+    "bulkNoUnitsForType": "Niciun apartament nu are un contor de acest tip configurat.",
+    "bulkNoPermission": "Nu ai permisiunea de a înregistra citiri de contor.",
+    "unitColumnLabel": "Apartament",
+    "lastReadingColumnLabel": "Ultima citire",
+    "newReadingColumnLabel": "Citire nouă",
+    "bulkSubmit": "{count, plural, =0 {Înregistrează citirile} one {Înregistrează # citire} other {Înregistrează # citiri}}",
+    "bulkSubmitting": "Se înregistrează...",
+    "bulkSuccess": "{count, plural, one {O citire a fost înregistrată.} other {# citiri au fost înregistrate.}}"
   }
 }
