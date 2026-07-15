@@ -508,6 +508,8 @@
     "addressLabel": "Adresă",
     "totalDueLabel": "Total de plată",
     "dueDateHint": "Termen de achitare: {date}",
+    "priorBalanceLabel": "Datorii (sold anterior)",
+    "currentInvoiceLabel": "Factură curentă",
     "feeTypeColumn": "Tip cheltuială",
     "quantityColumn": "Consum",
     "unitOfMeasureColumnShort": "U.M.",

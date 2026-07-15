@@ -16,8 +16,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { computeOutstandingBalance } from "@/lib/balance";
 
-import { statusVariant, statusLabelKeys } from "../invoice-status";
+import { statusHeaderClasses, statusLabelKeys } from "../invoice-status";
 import { AdjustmentDialog } from "./adjustment-dialog";
 
 // Short unit-of-measure labels matching how a real invoice prints
@@ -60,7 +61,7 @@ export default async function InvoiceDetailPage({
   const { data: invoice } = await supabase
     .from("invoices")
     .select(
-      "id, invoice_number, issued_at, due_date, billing_period_start, billing_period_end, total_amount, status, unit_id, units!inner(unit_number, building_id)"
+      "id, invoice_number, issued_at, due_date, billing_period_start, billing_period_end, total_amount, status, unit_id, units!inner(unit_number, building_id, payment_account_code)"
     )
     .eq("id", invoiceId)
     .eq("units.building_id", id)
@@ -74,28 +75,63 @@ export default async function InvoiceDetailPage({
   const capabilities = context?.capabilities ?? [];
   const canEditLines = invoice.status === "draft" && capabilities.includes("finance.invoice.generate");
 
-  const [{ data: lines }, { data: ownerships }] = await Promise.all([
-    supabase
-      .from("invoice_lines")
-      .select("id, amount, adjustment_amount, adjustment_reason, calculation_input, fee_types(label)")
-      .eq("invoice_id", invoiceId)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("ownerships")
-      .select("share_percent, owners(full_name, personal_code)")
-      .eq("unit_id", invoice.unit_id)
-      .is("effective_to", null)
-      .order("share_percent", { ascending: false }),
-  ]);
+  const [{ data: lines }, { data: ownerships }, { data: openingBalance }, { data: priorInvoices }, { data: priorPayments }] =
+    await Promise.all([
+      supabase
+        .from("invoice_lines")
+        .select("id, amount, adjustment_amount, adjustment_reason, calculation_input, fee_types(label)")
+        .eq("invoice_id", invoiceId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("ownerships")
+        .select("share_percent, owners(full_name)")
+        .eq("unit_id", invoice.unit_id)
+        .is("effective_to", null)
+        .order("share_percent", { ascending: false }),
+      supabase
+        .from("opening_balances")
+        .select("amount")
+        .eq("unit_id", invoice.unit_id)
+        .maybeSingle(),
+      // Everything already billed for this unit strictly before this
+      // invoice's own period -- this invoice's own total is
+      // deliberately excluded, it's shown as a separate line.
+      supabase
+        .from("invoices")
+        .select("total_amount")
+        .eq("unit_id", invoice.unit_id)
+        .neq("status", "cancelled")
+        .neq("status", "draft")
+        .neq("id", invoiceId)
+        .lt("billing_period_start", invoice.billing_period_start),
+      supabase
+        .from("payments")
+        .select("amount")
+        .eq("unit_id", invoice.unit_id)
+        .lt("paid_at", invoice.billing_period_start),
+    ]);
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
-  const unitNumber = embedOne(invoice.units)?.unit_number;
+  const unitEmbed = embedOne(invoice.units);
+  const unitNumber = unitEmbed?.unit_number;
   // The invoice header shows one client -- the largest current
   // co-owner, same convention as the printed original this is modeled
   // after (a single "Proprietar Apartament" line, not a full co-owner
   // list).
   const primaryOwner = embedOne(ownerships?.[0]?.owners);
   const fullAddress = building.address ? `${building.address}, ap. ${unitNumber}` : `ap. ${unitNumber}`;
+
+  // "Datorii" (Sold anterior): everything owed as of the start of
+  // this invoice's period, before its own charges are added --
+  // opening balance plus prior invoices minus prior payments, same
+  // formula as the unit page's outstanding balance, just cut off
+  // before this period instead of "as of now".
+  const priorBalance = computeOutstandingBalance({
+    openingBalance: openingBalance?.amount ?? 0,
+    invoiceTotal: (priorInvoices ?? []).reduce((sum, i) => sum + i.total_amount, 0),
+    paymentTotal: (priorPayments ?? []).reduce((sum, p) => sum + p.amount, 0),
+  });
+  const grandTotal = priorBalance + Number(invoice.total_amount);
 
   const rows = (lines ?? []).map((line) => {
     const input = (line.calculation_input ?? {}) as CalculationInput;
@@ -134,7 +170,7 @@ export default async function InvoiceDetailPage({
             <p className="text-xs tracking-wide text-slate-300 uppercase">{associationName}</p>
             <h1 className="text-xl font-semibold">{t("digitalInvoiceTitle")}</h1>
           </div>
-          <Badge variant={statusVariant[invoice.status]} className="text-sm">
+          <Badge className={`text-sm ${statusHeaderClasses[invoice.status]}`}>
             {t(statusLabelKeys[invoice.status])}
           </Badge>
         </div>
@@ -158,22 +194,30 @@ export default async function InvoiceDetailPage({
             <dt className="text-muted-foreground">{t("clientLabel")}</dt>
             <dd className="font-medium">{primaryOwner?.full_name ?? "—"}</dd>
             <dt className="text-muted-foreground">{t("personalCodeColumnLabel")}</dt>
-            <dd className="font-medium">{primaryOwner?.personal_code ?? "—"}</dd>
+            <dd className="font-medium">{unitEmbed?.payment_account_code ?? "—"}</dd>
             <dt className="text-muted-foreground">{t("addressLabel")}</dt>
             <dd className="font-medium">{fullAddress}</dd>
           </dl>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-6 py-4">
-          <div>
+        <div className="flex flex-wrap items-end justify-between gap-4 border-t bg-muted/40 px-6 py-4">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">{t("priorBalanceLabel")}</dt>
+            <dd className="text-right font-medium tabular-nums">{priorBalance.toFixed(2)}</dd>
+            <dt className="text-muted-foreground">{t("currentInvoiceLabel")}</dt>
+            <dd className="text-right font-medium tabular-nums">
+              {Number(invoice.total_amount).toFixed(2)}
+            </dd>
+          </dl>
+          <div className="text-right">
             <p className="text-sm text-muted-foreground">{t("totalDueLabel")}</p>
-            <p className="text-3xl font-bold">{invoice.total_amount} MDL</p>
+            <p className="text-3xl font-bold">{grandTotal.toFixed(2)} MDL</p>
+            {invoice.due_date && (
+              <p className="text-xs text-muted-foreground">
+                {t("dueDateHint", { date: invoice.due_date })}
+              </p>
+            )}
           </div>
-          {invoice.due_date && (
-            <p className="text-sm text-muted-foreground">
-              {t("dueDateHint", { date: invoice.due_date })}
-            </p>
-          )}
         </div>
       </Card>
 

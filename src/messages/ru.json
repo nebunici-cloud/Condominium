@@ -508,6 +508,8 @@
     "addressLabel": "Адрес",
     "totalDueLabel": "Итого к оплате",
     "dueDateHint": "Срок оплаты: {date}",
+    "priorBalanceLabel": "Задолженность (остаток)",
+    "currentInvoiceLabel": "Текущий счёт",
     "feeTypeColumn": "Вид расхода",
     "quantityColumn": "Потребление",
     "unitOfMeasureColumnShort": "Ед. изм.",
