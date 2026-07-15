@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { normalizeMeterType } from "@/lib/meter-types";
+import { embedOne } from "@/lib/embed";
 
 export type ParsedUnitRow = {
   rowNumber: number;
@@ -129,22 +130,29 @@ export async function commitUnitsImport(
 
   const supabase = await createClient();
 
-  // One reserved block from the shared per-tenant counter, not one
-  // round trip per row -- see generate_unit_account_codes.
-  const { data: accountCodes } = await supabase.rpc("generate_unit_account_codes", {
-    p_tenant_id: tenantId,
-    p_count: validRows.length,
-  });
+  // Every row in this import belongs to the same building, so its
+  // codes only need one lookup -- Cod Personal is then just a
+  // per-row composition, no counter/round trip needed.
+  const { data: building } = await supabase
+    .from("buildings")
+    .select("code, associations(code)")
+    .eq("id", buildingId)
+    .maybeSingle();
+  const associationCode = building ? embedOne(building.associations)?.code : null;
+  const buildingCode = building?.code;
 
   const { error } = await supabase.from("units").insert(
-    validRows.map((row, i) => ({
+    validRows.map((row) => ({
       tenant_id: tenantId,
       building_id: buildingId,
       unit_number: row.unitNumber,
       floor: row.floor,
       area_sqm: row.areaSqm,
       ownership_share_percent: row.ownershipSharePercent,
-      payment_account_code: accountCodes?.[i] ?? null,
+      payment_account_code:
+        buildingCode && associationCode
+          ? `${associationCode}-${buildingCode}-${row.unitNumber}`
+          : null,
       meters: row.meters.map((m) => ({ type: m.type, meter_id: m.meterId })),
     }))
   );

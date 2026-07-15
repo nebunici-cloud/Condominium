@@ -77,7 +77,8 @@
     "updateError": "Не удалось обновить ассоциацию.",
     "noAssociations": "Вы ещё не создали ни одной ассоциации.",
     "buildingsCount": "{count, plural, =0 {нет домов} one {# дом} few {# дома} other {# домов}}",
-    "viewDetails": "Подробнее"
+    "viewDetails": "Подробнее",
+    "codeLabel": "Код ассоциации"
   },
   "buildings": {
     "title": "Дома",
@@ -95,7 +96,8 @@
     "noBuildings": "В этой ассоциации ещё нет домов.",
     "unitsCount": "{count, plural, =0 {нет квартир} one {# квартира} few {# квартиры} other {# квартир}}",
     "unitsCompletedStat": "{completed} из {total} квартир имеют собственника (доля 100%)",
-    "viewDetails": "Подробнее"
+    "viewDetails": "Подробнее",
+    "codeLabel": "Код дома"
   },
   "units": {
     "title": "Квартиры",

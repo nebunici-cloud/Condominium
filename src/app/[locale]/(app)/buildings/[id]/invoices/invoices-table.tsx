@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
 
 import { formatPeriodLabel } from "@/lib/period";
+import { formatInvoiceNumber } from "@/lib/codes";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -127,11 +128,13 @@ function BulkActionButton({
 
 export function InvoicesTable({
   buildingId,
+  associationCode,
   invoices,
   canPublish,
   canDiscard,
 }: {
   buildingId: string;
+  associationCode: string | null;
   invoices: InvoiceRow[];
   canPublish: boolean;
   canDiscard: boolean;
@@ -284,7 +287,7 @@ export function InvoicesTable({
                   />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {invoice.invoiceNumber ?? "—"}
+                  {formatInvoiceNumber(associationCode, invoice.invoiceNumber) ?? "—"}
                 </TableCell>
                 <TableCell className="font-medium">{invoice.unitNumber}</TableCell>
                 <TableCell>{formatPeriodLabel(invoice.periodStart, invoice.periodEnd, locale)}</TableCell>

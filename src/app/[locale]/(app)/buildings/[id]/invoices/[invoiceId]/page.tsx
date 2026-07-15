@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { computeOutstandingBalance } from "@/lib/balance";
 import { formatPeriodLabel } from "@/lib/period";
+import { formatInvoiceNumber } from "@/lib/codes";
 
 import { statusHeaderClasses, statusLabelKeys } from "../invoice-status";
 import { AdjustmentDialog } from "./adjustment-dialog";
@@ -52,7 +53,7 @@ export default async function InvoiceDetailPage({
 
   const { data: building } = await supabase
     .from("buildings")
-    .select("id, name, address, association_id, associations(name)")
+    .select("id, name, address, association_id, associations(name, code)")
     .eq("id", id)
     .maybeSingle();
 
@@ -114,6 +115,7 @@ export default async function InvoiceDetailPage({
     ]);
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
+  const associationCode = embedOne(building.associations)?.code ?? null;
   const unitEmbed = embedOne(invoice.units);
   const unitNumber = unitEmbed?.unit_number;
   // The invoice header shows one client -- the largest current
@@ -182,7 +184,9 @@ export default async function InvoiceDetailPage({
         <div className="grid gap-6 px-6 py-5 sm:grid-cols-2">
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
             <dt className="text-muted-foreground">{t("invoiceNumberLabel")}</dt>
-            <dd className="font-medium">{invoice.invoice_number ?? t("draftPlaceholder")}</dd>
+            <dd className="font-medium">
+              {formatInvoiceNumber(associationCode, invoice.invoice_number) ?? t("draftPlaceholder")}
+            </dd>
             <dt className="text-muted-foreground">{t("dueDateLabel")}</dt>
             <dd className="font-medium">{invoice.due_date ?? "—"}</dd>
             <dt className="text-muted-foreground">{t("period")}</dt>

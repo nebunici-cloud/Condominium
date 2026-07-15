@@ -38,7 +38,7 @@ export default async function BuildingDetailPage({
 
   const { data: building } = await supabase
     .from("buildings")
-    .select("id, tenant_id, name, address, association_id, associations(name)")
+    .select("id, tenant_id, name, address, code, association_id, associations(name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -103,6 +103,11 @@ export default async function BuildingDetailPage({
           <p className="mt-1 text-sm text-muted-foreground">
             {tBuildings("unitsCount", { count: units?.length ?? 0 })}
           </p>
+          {building.code && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {tBuildings("codeLabel")}: {building.code}
+            </p>
+          )}
           {units && units.length > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
               {tBuildings("unitsCompletedStat", {

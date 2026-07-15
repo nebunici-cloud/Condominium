@@ -23,7 +23,7 @@ export default async function BuildingInvoicesPage({
 
   const { data: building } = await supabase
     .from("buildings")
-    .select("id, name, association_id, associations(name)")
+    .select("id, name, association_id, associations(name, code)")
     .eq("id", id)
     .maybeSingle();
 
@@ -40,6 +40,7 @@ export default async function BuildingInvoicesPage({
     capabilities.includes("finance.payment.record") || capabilities.includes("finance.invoice.publish");
 
   const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
+  const associationCode = embedOne(building.associations)?.code ?? null;
 
   const [{ data: feeTypes }, { data: invoices }, billingDefaults] = await Promise.all([
     supabase
@@ -124,6 +125,7 @@ export default async function BuildingInvoicesPage({
       ) : (
         <InvoicesTable
           buildingId={building.id}
+          associationCode={associationCode}
           canPublish={canPublish}
           canDiscard={canDiscard}
           invoices={invoices.map((invoice) => ({

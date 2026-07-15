@@ -77,7 +77,8 @@
     "updateError": "Nu am putut actualiza asociația.",
     "noAssociations": "Nu ai creat încă nicio asociație.",
     "buildingsCount": "{count, plural, =0 {niciun bloc} one {# bloc} other {# blocuri}}",
-    "viewDetails": "Vezi detalii"
+    "viewDetails": "Vezi detalii",
+    "codeLabel": "Cod asociație"
   },
   "buildings": {
     "title": "Blocuri",
@@ -95,7 +96,8 @@
     "noBuildings": "Niciun bloc creat încă în această asociație.",
     "unitsCount": "{count, plural, =0 {niciun apartament} one {# apartament} other {# apartamente}}",
     "unitsCompletedStat": "{completed} din {total} apartamente au proprietar alocat (cotă 100%)",
-    "viewDetails": "Vezi detalii"
+    "viewDetails": "Vezi detalii",
+    "codeLabel": "Cod bloc"
   },
   "units": {
     "title": "Apartamente",
