@@ -33,7 +33,8 @@
     "audit": "Jurnal de activitate",
     "roles": "Roluri",
     "config": "Configurare",
-    "settings": "Setări"
+    "settings": "Setări",
+    "myHome": "Locuința mea"
   },
   "auth": {
     "signInTitle": "Autentificare",
@@ -603,5 +604,14 @@
     "bulkSubmit": "{count, plural, =0 {Înregistrează citirile} one {Înregistrează # citire} other {Înregistrează # citiri}}",
     "bulkSubmitting": "Se înregistrează...",
     "bulkSuccess": "{count, plural, one {O citire a fost înregistrată.} other {# citiri au fost înregistrate.}}"
+  },
+  "my": {
+    "title": "Locuința mea",
+    "noUnits": "Contul dvs. nu este încă asociat cu un apartament. Contactați administratorul asociației.",
+    "unitTitle": "Apartament {unitNumber}",
+    "submitReading": "Transmite indicii",
+    "submitReadingConfirm": "Transmite",
+    "lastReading": "Ultimul indice: {value} ({date})",
+    "noReadingYet": "Fără indici încă"
   }
 }

@@ -13,5 +13,14 @@ export default async function Home({
     data: { user },
   } = await supabase.auth.getUser();
 
-  redirect(user ? `/${locale}/associations` : `/${locale}/login`);
+  if (!user) {
+    redirect(`/${locale}/login`);
+  }
+
+  // Residents land on their own home page; staff keep the
+  // associations overview as the entry point.
+  const { data: myUnitIds } = await supabase.rpc("user_unit_ids");
+  redirect(
+    (myUnitIds ?? []).length > 0 ? `/${locale}/my` : `/${locale}/associations`
+  );
 }

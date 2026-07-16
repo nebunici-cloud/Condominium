@@ -21,10 +21,12 @@ export function AppNav({
   capabilities,
   displayName,
   roleLabels,
+  showMyHome,
 }: {
   capabilities: string[];
   displayName: string;
   roleLabels: string[];
+  showMyHome: boolean;
 }) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
@@ -50,6 +52,14 @@ export function AppNav({
     <header className="border-b">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {showMyHome && (
+            <Link
+              href="/my"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              {t("myHome")}
+            </Link>
+          )}
           {visibleNavItems.map((item) => (
             <Link
               key={item.href}

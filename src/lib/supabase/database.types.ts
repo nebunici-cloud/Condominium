@@ -500,6 +500,7 @@ export type Database = {
           meter_type: string
           reading_date: string
           reading_value: number
+          self_submitted: boolean
           tenant_id: string
           unit_id: string
         }
@@ -511,6 +512,7 @@ export type Database = {
           meter_type: string
           reading_date: string
           reading_value: number
+          self_submitted?: boolean
           tenant_id: string
           unit_id: string
         }
@@ -522,6 +524,7 @@ export type Database = {
           meter_type?: string
           reading_date?: string
           reading_value?: number
+          self_submitted?: boolean
           tenant_id?: string
           unit_id?: string
         }
@@ -1277,6 +1280,7 @@ export type Database = {
         Returns: string
       }
       unit_association_id: { Args: { p_unit_id: string }; Returns: string }
+      user_unit_ids: { Args: never; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

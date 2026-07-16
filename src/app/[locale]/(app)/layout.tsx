@@ -44,13 +44,14 @@ export default async function AppLayout({
   const capabilities = await getUserCapabilities(supabase, tenantId, user.id);
 
   const tRoles = await getTranslations("roles");
-  const [{ data: profile }, { data: userRoleRows }] = await Promise.all([
+  const [{ data: profile }, { data: userRoleRows }, { data: myUnitIds }] = await Promise.all([
     supabase.from("profiles").select("full_name, email").eq("id", user.id).maybeSingle(),
     supabase
       .from("user_roles")
       .select("roles(code, name)")
       .eq("tenant_id", tenantId)
       .eq("user_id", user.id),
+    supabase.rpc("user_unit_ids"),
   ]);
 
   const displayName = profile?.full_name || profile?.email || user.email || "";
@@ -65,7 +66,12 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-full flex-col">
-      <AppNav capabilities={capabilities} displayName={displayName} roleLabels={roleLabels} />
+      <AppNav
+        capabilities={capabilities}
+        displayName={displayName}
+        roleLabels={roleLabels}
+        showMyHome={(myUnitIds ?? []).length > 0}
+      />
       <div className="flex-1">{children}</div>
     </div>
   );
