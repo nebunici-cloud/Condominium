@@ -6,6 +6,38 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 const uuidSchema = z.string().uuid();
 
+// What separates back-office (admin module) users from residents. The
+// owner/tenant role bundles carry only view capabilities for the
+// entity graph (association/building/unit/ownership view), none of
+// which appear here -- so holding ANY of these marks the user as
+// staff and unlocks the admin module. RLS remains the real security
+// boundary; this drives module routing and shell UX.
+const STAFF_CAPABILITIES = [
+  "core.owner.view",
+  "core.occupant.view",
+  "core.audit.view",
+  "core.role.manage",
+  "core.tenant.manage",
+  "core.config.manage",
+  "core.user.invite",
+  "core.unit.create",
+  "core.building.create",
+  "finance.fee_type.view",
+  "finance.invoice.view",
+  "finance.invoice.generate",
+  "finance.invoice.publish",
+  "finance.invoice.cancel",
+  "finance.payment.view",
+  "finance.payment.record",
+  "finance.meter_reading.record",
+  "finance.opening_balance.import",
+  "comms.announcement.manage",
+];
+
+export function isStaff(capabilities: string[]): boolean {
+  return STAFF_CAPABILITIES.some((capability) => capabilities.includes(capability));
+}
+
 // Capability grants are tenant-wide (role_capabilities.association_id
 // is null) for org-level concerns, or scoped to one association for
 // everything tied to an association-owned resource (buildings, units,

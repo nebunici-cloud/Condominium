@@ -24,7 +24,7 @@ import {
 import {
   statusBadgeClasses,
   statusLabelKeys,
-} from "../buildings/[id]/invoices/invoice-status";
+} from "@/lib/invoice-status";
 import { SubmitReadingDialog } from "./submit-reading-dialog";
 
 // The resident's self-service home: everything scoped to the units
@@ -209,7 +209,7 @@ export default async function MyHomePage() {
                             <TableRow key={invoice.id}>
                               <TableCell>
                                 <Link
-                                  href={`/buildings/${unit.building_id}/invoices/${invoice.id}`}
+                                  href={`/my/invoices/${invoice.id}`}
                                   className="underline-offset-2 hover:underline"
                                 >
                                   {formatPeriodLabel(

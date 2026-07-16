@@ -35,7 +35,9 @@
     "roles": "Роли",
     "config": "Настройки",
     "settings": "Настройки",
-    "myHome": "Моё жильё"
+    "myHome": "Моё жильё",
+    "portalView": "Режим жильца",
+    "adminView": "Администрирование"
   },
   "auth": {
     "signInTitle": "Вход в систему",
