@@ -500,6 +500,7 @@ export type Database = {
           meter_type: string
           reading_date: string
           reading_value: number
+          self_submitted: boolean
           tenant_id: string
           unit_id: string
         }
@@ -511,6 +512,7 @@ export type Database = {
           meter_type: string
           reading_date: string
           reading_value: number
+          self_submitted?: boolean
           tenant_id: string
           unit_id: string
         }
@@ -522,6 +524,7 @@ export type Database = {
           meter_type?: string
           reading_date?: string
           reading_value?: number
+          self_submitted?: boolean
           tenant_id?: string
           unit_id?: string
         }
@@ -1220,6 +1223,7 @@ export type Database = {
         Returns: string
       }
       bootstrap_tenant: { Args: { p_tenant_name: string }; Returns: string }
+      cancel_invoices: { Args: { p_invoice_ids: string[] }; Returns: number }
       commit_invoice_batch: {
         Args: {
           p_building_id: string
@@ -1262,6 +1266,10 @@ export type Database = {
         Returns: undefined
       }
       seed_default_roles: { Args: { p_tenant_id: string }; Returns: undefined }
+      sync_invoice_payment_status: {
+        Args: { p_invoice_id: string }
+        Returns: undefined
+      }
       set_allocation_rule: {
         Args: {
           p_approval_reference?: string
@@ -1272,6 +1280,7 @@ export type Database = {
         Returns: string
       }
       unit_association_id: { Args: { p_unit_id: string }; Returns: string }
+      user_unit_ids: { Args: never; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

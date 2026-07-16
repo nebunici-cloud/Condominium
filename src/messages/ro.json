@@ -24,7 +24,8 @@
     "error": "A apărut o eroare",
     "success": "Succes",
     "required": "Acest câmp este obligatoriu",
-    "importData": "Import date"
+    "importData": "Import date",
+    "print": "Tipărește"
   },
   "nav": {
     "dashboard": "Panou principal",
@@ -33,7 +34,8 @@
     "audit": "Jurnal de activitate",
     "roles": "Roluri",
     "config": "Configurare",
-    "settings": "Setări"
+    "settings": "Setări",
+    "myHome": "Locuința mea"
   },
   "auth": {
     "signInTitle": "Autentificare",
@@ -95,7 +97,11 @@
     "noBuildings": "Niciun bloc creat încă în această asociație.",
     "unitsCount": "{count, plural, =0 {niciun apartament} one {# apartament} other {# apartamente}}",
     "unitsCompletedStat": "{completed} din {total} apartamente au proprietar alocat (cotă 100%)",
-    "viewDetails": "Vezi detalii"
+    "viewDetails": "Vezi detalii",
+    "inviteOwners": "Invită proprietarii",
+    "inviteOwnersSuccess": "Invitații trimise: {invited} (omise: {skipped})",
+    "inviteOwnersError": "Invitațiile nu au putut fi trimise",
+    "inviteOwnersNone": "Niciun proprietar de invitat (fără email, deja invitați sau deja înregistrați)."
   },
   "units": {
     "title": "Apartamente",
@@ -603,5 +609,14 @@
     "bulkSubmit": "{count, plural, =0 {Înregistrează citirile} one {Înregistrează # citire} other {Înregistrează # citiri}}",
     "bulkSubmitting": "Se înregistrează...",
     "bulkSuccess": "{count, plural, one {O citire a fost înregistrată.} other {# citiri au fost înregistrate.}}"
+  },
+  "my": {
+    "title": "Locuința mea",
+    "noUnits": "Contul dvs. nu este încă asociat cu un apartament. Contactați administratorul asociației.",
+    "unitTitle": "Apartament {unitNumber}",
+    "submitReading": "Transmite indicii",
+    "submitReadingConfirm": "Transmite",
+    "lastReading": "Ultimul indice: {value} ({date})",
+    "noReadingYet": "Fără indici încă"
   }
 }

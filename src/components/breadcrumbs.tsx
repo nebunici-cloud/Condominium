@@ -10,7 +10,7 @@ export type BreadcrumbItem = {
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-sm">
+    <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-sm print:hidden">
       {items.map((item, index) => (
         <Fragment key={index}>
           {index > 0 && (

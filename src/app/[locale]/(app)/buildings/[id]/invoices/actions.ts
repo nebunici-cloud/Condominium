@@ -553,59 +553,36 @@ export async function commitInvoiceGeneration(input: z.infer<typeof requestSchem
   return { error: null, invoiced: invoiced ?? 0 };
 }
 
-// Cancelling clears any payment matched to this invoice rather than
-// leaving it pointing at a dead invoice -- the payment itself still
-// counts toward the unit's outstanding balance either way (matching
-// is reconciliation bookkeeping, not what makes a payment count), but
-// leaving it "matched" to a cancelled invoice would be confusing and
-// would block re-matching it to whatever invoice replaces this one.
+// Voiding goes through the cancel_invoices RPC: it checks the
+// dedicated finance.invoice.cancel capability per invoice, clears any
+// matched payments (they still count toward the unit's balance --
+// matching is reconciliation bookkeeping, not what makes a payment
+// count), and skips paid/already-cancelled rows in a mixed selection
+// instead of erroring the whole batch.
 export async function cancelInvoice(invoiceId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from("invoices")
-    .update({ status: "cancelled" })
-    .eq("id", invoiceId);
+  const { error } = await supabase.rpc("cancel_invoices", { p_invoice_ids: [invoiceId] });
 
   if (error) {
     return { error: error.message };
   }
 
-  await supabase.from("payments").update({ matched_invoice_id: null }).eq("matched_invoice_id", invoiceId);
-
   revalidatePath("/", "layout");
   return { error: null };
 }
 
-// Bulk counterpart for the invoices list's mass-selection actions.
-// Scoped to draft/issued/partially_paid same as the per-row cancel
-// button already is -- a paid or already-cancelled row slipping into
-// a mixed selection is silently skipped rather than erroring the
-// whole batch.
 export async function cancelInvoices(invoiceIds: string[]) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("invoices")
-    .update({ status: "cancelled" })
-    .in("id", invoiceIds)
-    .in("status", ["draft", "issued", "partially_paid"])
-    .select("id");
+  const { data, error } = await supabase.rpc("cancel_invoices", { p_invoice_ids: invoiceIds });
 
   if (error) {
     return { error: error.message, cancelled: 0 };
   }
 
-  const cancelledIds = (data ?? []).map((i) => i.id);
-  if (cancelledIds.length > 0) {
-    await supabase
-      .from("payments")
-      .update({ matched_invoice_id: null })
-      .in("matched_invoice_id", cancelledIds);
-  }
-
   revalidatePath("/", "layout");
-  return { error: null, cancelled: cancelledIds.length };
+  return { error: null, cancelled: data ?? 0 };
 }
 
 // Generated invoices land in draft (see the invoices.status default)

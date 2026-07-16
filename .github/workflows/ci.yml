@@ -36,3 +36,21 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  rls-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Boots a local Postgres from supabase/migrations, then runs the
+      # pgTAP suite in supabase/tests. This is what proves tenant
+      # isolation and finance visibility survive schema changes.
+      - name: Start local database
+        run: supabase db start
+
+      - name: Run RLS regression tests
+        run: supabase test db
