@@ -21,6 +21,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { NewUnitDialog } from "./new-unit-dialog";
 import { EditBuildingDialog } from "./edit-building-dialog";
 import { ImportDataMenu } from "./import-data-menu";
+import { InviteOwnersButton } from "./invite-owners-button";
 
 export default async function BuildingDetailPage({
   params,
@@ -112,6 +113,9 @@ export default async function BuildingDetailPage({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
+          {capabilities.includes("core.user.invite") && (
+            <InviteOwnersButton buildingId={building.id} />
+          )}
           {capabilities.includes("core.building.update") && (
             <EditBuildingDialog
               buildingId={building.id}

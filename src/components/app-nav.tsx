@@ -49,7 +49,7 @@ export function AppNav({
   }
 
   return (
-    <header className="border-b">
+    <header className="border-b print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {showMyHome && (

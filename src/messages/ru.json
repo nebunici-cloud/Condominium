@@ -24,7 +24,8 @@
     "error": "Произошла ошибка",
     "success": "Успешно",
     "required": "Это поле обязательно",
-    "importData": "Импорт данных"
+    "importData": "Импорт данных",
+    "print": "Печать"
   },
   "nav": {
     "dashboard": "Главная",
@@ -96,7 +97,11 @@
     "noBuildings": "В этой ассоциации ещё нет домов.",
     "unitsCount": "{count, plural, =0 {нет квартир} one {# квартира} few {# квартиры} other {# квартир}}",
     "unitsCompletedStat": "{completed} из {total} квартир имеют собственника (доля 100%)",
-    "viewDetails": "Подробнее"
+    "viewDetails": "Подробнее",
+    "inviteOwners": "Пригласить собственников",
+    "inviteOwnersSuccess": "Приглашений отправлено: {invited} (пропущено: {skipped})",
+    "inviteOwnersError": "Не удалось отправить приглашения",
+    "inviteOwnersNone": "Некого приглашать (нет email, уже приглашены или уже зарегистрированы)."
   },
   "units": {
     "title": "Квартиры",

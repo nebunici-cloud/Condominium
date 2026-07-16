@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { PrintButton } from "@/components/print-button";
 import { computeOutstandingBalance } from "@/lib/balance";
 import { formatPeriodLabel, formatDate } from "@/lib/period";
 
@@ -179,6 +180,10 @@ export default async function InvoiceDetailPage({
           },
         ]}
       />
+
+      <div className="mb-4 flex justify-end print:hidden">
+        <PrintButton />
+      </div>
 
       <Card className="mb-6 gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 px-6 py-4 text-white">
