@@ -1220,6 +1220,7 @@ export type Database = {
         Returns: string
       }
       bootstrap_tenant: { Args: { p_tenant_name: string }; Returns: string }
+      cancel_invoices: { Args: { p_invoice_ids: string[] }; Returns: number }
       commit_invoice_batch: {
         Args: {
           p_building_id: string
@@ -1262,6 +1263,10 @@ export type Database = {
         Returns: undefined
       }
       seed_default_roles: { Args: { p_tenant_id: string }; Returns: undefined }
+      sync_invoice_payment_status: {
+        Args: { p_invoice_id: string }
+        Returns: undefined
+      }
       set_allocation_rule: {
         Args: {
           p_approval_reference?: string

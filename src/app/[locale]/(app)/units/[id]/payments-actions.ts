@@ -5,28 +5,10 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
-
-async function recomputeInvoiceStatus(supabase: SupabaseClient, invoiceId: string) {
-  const { data: invoice } = await supabase
-    .from("invoices")
-    .select("total_amount, status")
-    .eq("id", invoiceId)
-    .maybeSingle();
-  // Cancelling supersedes the payment-driven status -- a payment
-  // touching a cancelled invoice shouldn't silently revive it.
-  if (!invoice || invoice.status === "cancelled") return;
-
-  const { data: payments } = await supabase
-    .from("payments")
-    .select("amount")
-    .eq("matched_invoice_id", invoiceId);
-  const paid = (payments ?? []).reduce((sum, p) => sum + p.amount, 0);
-
-  const status = paid <= 0 ? "issued" : paid < invoice.total_amount ? "partially_paid" : "paid";
-
-  await supabase.from("invoices").update({ status }).eq("id", invoiceId);
-}
+// Invoice paid/partially_paid status is kept in sync by a database
+// trigger on payments (sync_invoice_status) -- no application-side
+// recompute needed, and other write paths (imports, future payment
+// webhooks) get the same behavior for free.
 
 const recordPaymentSchema = z.object({
   unitId: z.string().uuid(),
@@ -61,10 +43,6 @@ export async function recordPayment(input: z.infer<typeof recordPaymentSchema>) 
     return { error: error.message };
   }
 
-  if (parsed.matchedInvoiceId) {
-    await recomputeInvoiceStatus(supabase, parsed.matchedInvoiceId);
-  }
-
   revalidatePath("/", "layout");
   return { error: null };
 }
@@ -86,8 +64,6 @@ export async function matchPayment(input: z.infer<typeof matchPaymentSchema>) {
   if (error) {
     return { error: error.message };
   }
-
-  await recomputeInvoiceStatus(supabase, parsed.invoiceId);
 
   revalidatePath("/", "layout");
   return { error: null };

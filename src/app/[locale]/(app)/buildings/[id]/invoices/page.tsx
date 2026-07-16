@@ -33,10 +33,9 @@ export default async function BuildingInvoicesPage({
   const context = await getCurrentCapabilities(supabase, building.association_id);
   const capabilities = context?.capabilities ?? [];
   const canPublish = capabilities.includes("finance.invoice.publish");
-  // Matches the invoices_update RLS policy exactly: either capability
-  // is enough to discard a draft or cancel an issued invoice.
-  const canDiscard =
-    capabilities.includes("finance.payment.record") || capabilities.includes("finance.invoice.publish");
+  // Voiding now has its own capability, checked again inside the
+  // cancel_invoices RPC -- this flag only controls button visibility.
+  const canDiscard = capabilities.includes("finance.invoice.cancel");
 
   const associationName = building.associations?.name ?? tAssociations("title");
 
