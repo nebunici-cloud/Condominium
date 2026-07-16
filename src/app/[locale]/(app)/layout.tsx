@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserCapabilities } from "@/lib/capabilities";
-import { embedOne } from "@/lib/embed";
 import { AppNav } from "@/components/app-nav";
 import { OnboardingForm } from "@/components/onboarding-form";
 
@@ -58,7 +57,7 @@ export default async function AppLayout({
   const roleLabels = Array.from(
     new Set(
       (userRoleRows ?? [])
-        .map((row) => embedOne(row.roles))
+        .map((row) => row.roles)
         .filter((role): role is { code: string; name: string } => Boolean(role))
         .map((role) => (tRoles.has(role.code) ? tRoles(role.code) : role.name))
     )

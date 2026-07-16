@@ -4,7 +4,6 @@ import { ChevronRightIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
-import { embedOne } from "@/lib/embed";
 import { getMeterTypeOptions } from "@/lib/meter-types";
 import { Link } from "@/i18n/navigation";
 import {
@@ -82,7 +81,7 @@ export default async function BuildingDetailPage({
   );
   const shareSumRounded = Math.round(shareSum * 1000) / 1000;
 
-  const associationName = embedOne(building.associations)?.name ?? tBuildings("title");
+  const associationName = building.associations?.name ?? tBuildings("title");
 
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">

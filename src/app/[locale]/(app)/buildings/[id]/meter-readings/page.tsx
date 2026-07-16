@@ -4,7 +4,6 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
 import { getMeterTypeOptions, normalizeMeterType } from "@/lib/meter-types";
-import { embedOne } from "@/lib/embed";
 import { Link } from "@/i18n/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
@@ -37,7 +36,7 @@ export default async function BulkMeterReadingsPage({
   const capabilities = context?.capabilities ?? [];
   const canRecord = capabilities.includes("finance.meter_reading.record");
 
-  const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
+  const associationName = building.associations?.name ?? tAssociations("title");
   const meterTypeOptions = await getMeterTypeOptions(supabase, building.association_id);
   const selectedType =
     requestedType && meterTypeOptions.includes(normalizeMeterType(requestedType))

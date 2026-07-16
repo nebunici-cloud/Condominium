@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
-import { embedOne } from "@/lib/embed";
 import { getMeterTypeOptions } from "@/lib/meter-types";
 import { computeOutstandingBalance } from "@/lib/balance";
 import {
@@ -57,10 +56,10 @@ export default async function UnitDetailPage({
     notFound();
   }
 
-  const building = embedOne(unit.buildings);
+  const building = unit.buildings;
   const buildingName = building?.name ?? t("title");
   const associationId = building?.association_id;
-  const associationName = embedOne(building?.associations)?.name ?? tAssociations("title");
+  const associationName = building?.associations?.name ?? tAssociations("title");
   const meterTypeOptions = associationId ? await getMeterTypeOptions(supabase, associationId) : [];
 
   const context = await getCurrentCapabilities(supabase, associationId);
@@ -121,11 +120,17 @@ export default async function UnitDetailPage({
     paymentTotal: (payments ?? []).reduce((sum, p) => sum + p.amount, 0),
   });
 
+  // meters is a free-form jsonb column, so entries are Json (possibly
+  // null or non-object) as far as the generated types are concerned --
+  // narrow each entry before reading its fields.
   const unitMeters = Array.isArray(unit.meters)
-    ? unit.meters.map((m: { type?: string; meter_id?: string }) => ({
-        type: m.type ?? "",
-        meterId: m.meter_id ?? "",
-      }))
+    ? unit.meters.map((m) => {
+        const meter = (m && typeof m === "object" && !Array.isArray(m) ? m : {}) as {
+          type?: string;
+          meter_id?: string;
+        };
+        return { type: meter.type ?? "", meterId: meter.meter_id ?? "" };
+      })
     : [];
 
   const lastReadingByMeterKey: Record<string, { value: number; date: string }> = {};
@@ -144,7 +149,7 @@ export default async function UnitDetailPage({
   const currentOccupantOwnerIds = new Set(
     (occupancies ?? [])
       .filter((o) => !o.effective_to)
-      .map((o) => embedOne(o.occupants)?.owner_id)
+      .map((o) => o.occupants?.owner_id)
       .filter((ownerId): ownerId is string => Boolean(ownerId))
   );
 
@@ -229,7 +234,7 @@ export default async function UnitDetailPage({
               <TableBody>
                 {ownerships.map((ownership) => {
                   const isCurrent = !ownership.effective_to;
-                  const owner = embedOne(ownership.owners);
+                  const owner = ownership.owners;
                   const ownerAlreadyLivesHere = owner && currentOccupantOwnerIds.has(owner.id);
                   return (
                     <TableRow key={ownership.id}>
@@ -300,7 +305,7 @@ export default async function UnitDetailPage({
               <TableBody>
                 {occupancies.map((occupancy) => {
                   const isCurrent = !occupancy.effective_to;
-                  const occupant = embedOne(occupancy.occupants);
+                  const occupant = occupancy.occupants;
                   return (
                     <TableRow key={occupancy.id}>
                       <TableCell className="font-medium">

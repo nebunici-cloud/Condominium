@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
-import { embedOne } from "@/lib/embed";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
@@ -39,7 +38,7 @@ export default async function BuildingInvoicesPage({
   const canDiscard =
     capabilities.includes("finance.payment.record") || capabilities.includes("finance.invoice.publish");
 
-  const associationName = embedOne(building.associations)?.name ?? tAssociations("title");
+  const associationName = building.associations?.name ?? tAssociations("title");
 
   const [{ data: feeTypes }, { data: invoices }, billingDefaults] = await Promise.all([
     supabase
@@ -129,7 +128,7 @@ export default async function BuildingInvoicesPage({
           invoices={invoices.map((invoice) => ({
             id: invoice.id,
             invoiceNumber: invoice.invoice_number,
-            unitNumber: embedOne(invoice.units)?.unit_number ?? "",
+            unitNumber: invoice.units?.unit_number ?? "",
             periodStart: invoice.billing_period_start,
             periodEnd: invoice.billing_period_end,
             issuedAt: invoice.issued_at,

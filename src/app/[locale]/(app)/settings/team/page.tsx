@@ -2,7 +2,6 @@ import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserCapabilities } from "@/lib/capabilities";
-import { embedOne } from "@/lib/embed";
 import { Link } from "@/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +65,7 @@ export default async function RolesPage() {
 
   const capabilitiesByRole = new Map<string, { code: string; description: string }[]>();
   for (const row of tenantWideGrants ?? []) {
-    const capability = embedOne(row.capabilities);
+    const capability = row.capabilities;
     if (!capability) continue;
     const list = capabilitiesByRole.get(row.role_id) ?? [];
     list.push(capability);
@@ -94,7 +93,7 @@ export default async function RolesPage() {
 
   const memberRoleLabels = new Map<string, string[]>();
   for (const row of memberRoleRows ?? []) {
-    const role = embedOne(row.roles);
+    const role = row.roles;
     if (!role) continue;
     const labels = memberRoleLabels.get(row.user_id) ?? [];
     labels.push(roleLabel(role));
@@ -117,7 +116,7 @@ export default async function RolesPage() {
     : { data: [] };
 
   const pendingInvites = (pendingInviteRows ?? []).map((row) => {
-    const role = embedOne(row.roles);
+    const role = row.roles;
     return { id: row.id, email: row.email, roleLabel: role ? roleLabel(role) : "—" };
   });
 
