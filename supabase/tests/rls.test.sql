@@ -13,6 +13,15 @@ begin;
 
 create extension if not exists pgtap;
 
+-- The local test stack follows the new cloud default of NOT
+-- auto-granting table privileges to the API roles, but the live
+-- project (created under the legacy default) has them. Grant here --
+-- rolled back with the transaction -- so the assertions exercise RLS,
+-- not missing table grants. audit_log keeps its hardened revoke.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+revoke insert, update, delete on public.audit_log from authenticated;
+
 select plan(18);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
