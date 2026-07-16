@@ -609,7 +609,15 @@
     "newReadingColumnLabel": "Citire nouă",
     "bulkSubmit": "{count, plural, =0 {Înregistrează citirile} one {Înregistrează # citire} other {Înregistrează # citiri}}",
     "bulkSubmitting": "Se înregistrează...",
-    "bulkSuccess": "{count, plural, one {O citire a fost înregistrată.} other {# citiri au fost înregistrate.}}"
+    "bulkSuccess": "{count, plural, one {O citire a fost înregistrată.} other {# citiri au fost înregistrate.}}",
+    "reviewTitle": "Verificare indici transmiși",
+    "reviewSubtitle": "Indici transmiși de locatari, în așteptarea verificării.",
+    "reviewEmpty": "Nimic de verificat.",
+    "reviewLink": "{count} de verificat",
+    "reviewAccept": "Acceptă",
+    "reviewMarked": "Indice verificat.",
+    "reviewDeleteConfirm": "Ștergeți acest indice transmis?",
+    "reviewDeleted": "Indice șters."
   },
   "my": {
     "title": "Locuința mea",
@@ -641,5 +649,18 @@
     "paidColumn": "Achitat",
     "outstandingColumn": "Datorie curentă",
     "totalRow": "TOTAL"
+  },
+  "dashboard": {
+    "title": "Panou de bord",
+    "outstandingDebt": "Datorii totale",
+    "collectionRate": "Rată de încasare (luna curentă)",
+    "collectionRateHint": "{collected} lei încasați din {invoiced} lei facturați",
+    "draftsPending": "Facturi nepublicate",
+    "readingsPending": "Indici de verificat",
+    "topDebtors": "Cei mai mari datornici",
+    "noDebtors": "Nicio datorie curentă.",
+    "unitColumn": "Apartament",
+    "buildingColumn": "Bloc",
+    "outstandingColumn": "Datorie"
   }
 }

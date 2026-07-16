@@ -551,6 +551,8 @@ export type Database = {
           meter_type: string
           reading_date: string
           reading_value: number
+          reviewed_at: string | null
+          reviewed_by: string | null
           self_submitted: boolean
           tenant_id: string
           unit_id: string
@@ -563,6 +565,8 @@ export type Database = {
           meter_type: string
           reading_date: string
           reading_value: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           self_submitted?: boolean
           tenant_id: string
           unit_id: string
@@ -575,6 +579,8 @@ export type Database = {
           meter_type?: string
           reading_date?: string
           reading_value?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           self_submitted?: boolean
           tenant_id?: string
           unit_id?: string
