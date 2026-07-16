@@ -29,6 +29,7 @@ export default async function AssociationDetailPage({
   const tUnits = await getTranslations("units");
   const tFinance = await getTranslations("financeSetup");
   const tAssociations = await getTranslations("associations");
+  const tAnnouncements = await getTranslations("announcements");
   const supabase = await createClient();
 
   const { data: association } = await supabase
@@ -84,6 +85,11 @@ export default async function AssociationDetailPage({
               </Link>
             </Button>
           )}
+          <Button variant="outline" asChild>
+            <Link href={`/associations/${association.id}/announcements`}>
+              {tAnnouncements("title")}
+            </Link>
+          </Button>
           {capabilities.includes("core.building.create") && (
             <NewBuildingDialog associationId={association.id} tenantId={association.tenant_id} />
           )}

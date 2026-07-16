@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(18);
+select plan(22);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -240,6 +240,46 @@ select is(
   (select count(*) from public.payments where matched_invoice_id is not null),
   0::bigint,
   'cancelling unmatches the payments that pointed at the invoice'
+);
+
+-- === Announcements ================================================
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$insert into public.announcements (tenant_id, association_id, title, body, created_by)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 'Hello', 'Body', '11111111-1111-1111-1111-111111111111')$$,
+  'admin with comms.announcement.manage can post an announcement'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.announcements),
+  1::bigint,
+  'resident (tenant member) sees the association announcement'
+);
+
+select throws_ok(
+  $$insert into public.announcements (tenant_id, association_id, title, body)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 'X', 'Y')$$,
+  '42501',
+  null,
+  'resident without comms.announcement.manage cannot post an announcement'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.announcements),
+  0::bigint,
+  'tenant B admin does not see tenant A announcements'
 );
 
 select * from finish();

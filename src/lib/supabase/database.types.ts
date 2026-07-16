@@ -75,6 +75,57 @@ export type Database = {
           },
         ]
       }
+      announcements: {
+        Row: {
+          association_id: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          published_at: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          association_id: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          association_id?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       associations: {
         Row: {
           address: string | null

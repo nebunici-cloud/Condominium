@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Button } from "@/components/ui/button";
 
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 import { PublishDraftsButton } from "./publish-drafts-button";
@@ -16,6 +17,7 @@ export default async function BuildingInvoicesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await getLocale();
   const t = await getTranslations("invoices");
   const tAssociations = await getTranslations("associations");
   const supabase = await createClient();
@@ -94,6 +96,13 @@ export default async function BuildingInvoicesPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {capabilities.includes("finance.invoice.view") && (
+            <Button variant="outline" asChild>
+              <a href={`/${locale}/buildings/${building.id}/debt-register`}>
+                {t("debtRegisterExport")}
+              </a>
+            </Button>
+          )}
           {capabilities.includes("finance.invoice.generate") && draftPeriod && (
             <GenerateInvoicesDialog
               buildingId={building.id}

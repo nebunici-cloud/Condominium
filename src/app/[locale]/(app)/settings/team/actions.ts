@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { inviteEmail, sendEmail } from "@/lib/email";
 
 const inviteUserSchema = z.object({
   tenantId: z.string().uuid(),
@@ -44,6 +45,15 @@ export async function inviteUser(input: z.infer<typeof inviteUserSchema>) {
   if (error) {
     return { error: error.message };
   }
+
+  // Best-effort notification; the invite itself already works the
+  // moment this row exists (accepted on the invitee's first sign-in).
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("name")
+    .eq("id", parsed.tenantId)
+    .maybeSingle();
+  await sendEmail({ to: email, ...inviteEmail(tenant?.name ?? "Condominium") });
 
   revalidatePath("/", "layout");
   return { error: null };

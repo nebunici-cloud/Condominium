@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { inviteEmail, sendEmail } from "@/lib/email";
 
 // Bulk-invites every owner of this building who has an email, no
 // platform account yet, and no pending invite -- each with the
@@ -108,6 +109,17 @@ export async function inviteBuildingOwners(buildingId: string) {
 
   if (error) {
     return { error: error.message, invited: 0, skipped };
+  }
+
+  // Best-effort notifications (no-ops until email is configured).
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("name")
+    .eq("id", building.tenant_id)
+    .maybeSingle();
+  const message = inviteEmail(tenant?.name ?? "Condominium");
+  for (const email of toInvite) {
+    await sendEmail({ to: email, ...message });
   }
 
   revalidatePath("/", "layout");

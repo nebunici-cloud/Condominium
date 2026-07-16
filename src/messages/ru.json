@@ -544,7 +544,8 @@
     "adjustmentReasonPlaceholder": "напр.: коррекция показаний счётчика за прошлый месяц",
     "adjustmentReasonHint": "Обязательно, если сумма перерасчёта отличается от 0.",
     "adjustmentError": "Не удалось сохранить перерасчёт.",
-    "adjustmentSuccess": "Перерасчёт сохранён."
+    "adjustmentSuccess": "Перерасчёт сохранён.",
+    "debtRegisterExport": "Реестр задолженности (Excel)"
   },
   "payments": {
     "title": "Платежи",
@@ -617,6 +618,28 @@
     "submitReading": "Передать показания",
     "submitReadingConfirm": "Передать",
     "lastReading": "Последнее показание: {value} ({date})",
-    "noReadingYet": "Показаний пока нет"
+    "noReadingYet": "Показаний пока нет",
+    "announcements": "Объявления"
+  },
+  "announcements": {
+    "title": "Объявления",
+    "new": "Новое объявление",
+    "titleLabel": "Заголовок",
+    "bodyLabel": "Сообщение",
+    "empty": "Объявлений пока нет.",
+    "createSuccess": "Объявление опубликовано.",
+    "createError": "Не удалось опубликовать объявление.",
+    "deleteConfirm": "Удалить это объявление?",
+    "deleteSuccess": "Объявление удалено."
+  },
+  "debtRegister": {
+    "sheetName": "Реестр задолженности",
+    "accountCodeColumn": "Личный код",
+    "ownersColumn": "Собственники",
+    "openingColumn": "Начальное сальдо",
+    "invoicedColumn": "Начислено",
+    "paidColumn": "Оплачено",
+    "outstandingColumn": "Текущий долг",
+    "totalRow": "ИТОГО"
   }
 }
