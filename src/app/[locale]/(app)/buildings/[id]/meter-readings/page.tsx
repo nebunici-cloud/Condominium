@@ -36,6 +36,22 @@ export default async function BulkMeterReadingsPage({
   const capabilities = context?.capabilities ?? [];
   const canRecord = capabilities.includes("finance.meter_reading.record");
 
+  // Count of resident self-submissions still awaiting review, so the
+  // review link can carry a badge (and hide entirely when empty).
+  const { data: buildingUnits } = await supabase
+    .from("units")
+    .select("id")
+    .eq("building_id", id);
+  const buildingUnitIds = (buildingUnits ?? []).map((u) => u.id);
+  const { count: pendingReviewCount } = canRecord && buildingUnitIds.length
+    ? await supabase
+        .from("meter_readings")
+        .select("id", { count: "exact", head: true })
+        .in("unit_id", buildingUnitIds)
+        .eq("self_submitted", true)
+        .is("reviewed_at", null)
+    : { count: 0 };
+
   const associationName = building.associations?.name ?? tAssociations("title");
   const meterTypeOptions = await getMeterTypeOptions(supabase, building.association_id);
   const selectedType =
@@ -90,11 +106,21 @@ export default async function BulkMeterReadingsPage({
         ]}
       />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">{t("bulkTitle")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("bulkSubtitle", { building: building.name })}
-        </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t("bulkTitle")}</h1>
+          <p className="text-sm text-muted-foreground">
+            {t("bulkSubtitle", { building: building.name })}
+          </p>
+        </div>
+        {canRecord && (pendingReviewCount ?? 0) > 0 && (
+          <Link
+            href={`/buildings/${building.id}/meter-readings/review`}
+            className="rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
+          >
+            {t("reviewLink", { count: pendingReviewCount ?? 0 })}
+          </Link>
+        )}
       </div>
 
       {meterTypeOptions.length === 0 ? (

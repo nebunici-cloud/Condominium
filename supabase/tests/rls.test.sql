@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(22);
+select plan(23);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -210,6 +210,12 @@ select throws_ok(
   '42501',
   null,
   'resident cannot submit a reading for someone else''s unit'
+);
+
+select is(
+  (select count(*) from public.meter_readings where unit_id = 'dddddddd-0000-0000-0000-000000000001'),
+  1::bigint,
+  'resident can read back their own unit''s meter readings'
 );
 
 select is(

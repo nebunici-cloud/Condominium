@@ -609,7 +609,15 @@
     "newReadingColumnLabel": "Новое показание",
     "bulkSubmit": "{count, plural, =0 {Зарегистрировать показания} one {Зарегистрировать # показание} other {Зарегистрировать # показаний}}",
     "bulkSubmitting": "Регистрация...",
-    "bulkSuccess": "{count, plural, one {Зарегистрировано одно показание.} other {Зарегистрировано # показаний.}}"
+    "bulkSuccess": "{count, plural, one {Зарегистрировано одно показание.} other {Зарегистрировано # показаний.}}",
+    "reviewTitle": "Проверка показаний",
+    "reviewSubtitle": "Показания, переданные жильцами и ожидающие проверки.",
+    "reviewEmpty": "Нечего проверять.",
+    "reviewLink": "На проверку: {count}",
+    "reviewAccept": "Принять",
+    "reviewMarked": "Показание проверено.",
+    "reviewDeleteConfirm": "Удалить это переданное показание?",
+    "reviewDeleted": "Показание удалено."
   },
   "my": {
     "title": "Моё жильё",
@@ -641,5 +649,18 @@
     "paidColumn": "Оплачено",
     "outstandingColumn": "Текущий долг",
     "totalRow": "ИТОГО"
+  },
+  "dashboard": {
+    "title": "Панель управления",
+    "outstandingDebt": "Общая задолженность",
+    "collectionRate": "Собираемость (текущий месяц)",
+    "collectionRateHint": "{collected} лей собрано из {invoiced} лей начислено",
+    "draftsPending": "Неопубликованные счета",
+    "readingsPending": "Показания на проверку",
+    "topDebtors": "Крупнейшие должники",
+    "noDebtors": "Текущей задолженности нет.",
+    "unitColumn": "Квартира",
+    "buildingColumn": "Дом",
+    "outstandingColumn": "Долг"
   }
 }

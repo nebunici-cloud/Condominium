@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
+  { href: "/dashboard", key: "dashboard", requiredCapabilities: ["core.association.view"] },
   { href: "/associations", key: "associations", requiredCapabilities: ["core.association.view"] },
   { href: "/owners", key: "owners", requiredCapabilities: ["core.owner.view"] },
   { href: "/audit", key: "audit", requiredCapabilities: ["core.audit.view"] },
