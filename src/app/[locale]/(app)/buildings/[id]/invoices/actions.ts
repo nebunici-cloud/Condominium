@@ -12,7 +12,8 @@ import {
   type UnitAttributes,
 } from "@/lib/allocation-engine";
 import { normalizeMeterType } from "@/lib/meter-types";
-import { addDays, startOfMonth, endOfMonth } from "@/lib/period";
+import { addDays, startOfMonth, endOfMonth, formatPeriodLabel } from "@/lib/period";
+import { invoicePublishedEmail, isEmailConfigured, sendEmail } from "@/lib/email";
 
 const feeTypeInputSchema = z.object({
   feeTypeId: z.string().uuid(),
@@ -603,6 +604,8 @@ export async function publishInvoice(invoiceId: string) {
     return { error: error.message };
   }
 
+  await notifyInvoicesPublished(supabase, [invoiceId]);
+
   revalidatePath("/", "layout");
   return { error: null };
 }
@@ -616,8 +619,53 @@ export async function publishDraftInvoices(invoiceIds: string[]) {
     return { error: error.message, published: 0 };
   }
 
+  await notifyInvoicesPublished(supabase, invoiceIds);
+
   revalidatePath("/", "layout");
   return { error: null, published: data ?? 0 };
+}
+
+// Emails every current owner (with an email address) of each freshly
+// published invoice's unit. Best-effort: a failed or unconfigured
+// email never fails the publish itself.
+async function notifyInvoicesPublished(supabase: SupabaseClient, invoiceIds: string[]) {
+  if (!isEmailConfigured() || invoiceIds.length === 0) return;
+
+  const { data: invoices } = await supabase
+    .from("invoices")
+    .select("id, unit_id, total_amount, billing_period_start, billing_period_end, units(unit_number)")
+    .in("id", invoiceIds)
+    .eq("status", "issued");
+  if (!invoices || invoices.length === 0) return;
+
+  const unitIds = invoices.map((i) => i.unit_id);
+  const { data: ownerships } = await supabase
+    .from("ownerships")
+    .select("unit_id, owners(email)")
+    .in("unit_id", unitIds)
+    .is("effective_to", null);
+
+  const emailsByUnit = new Map<string, Set<string>>();
+  for (const row of ownerships ?? []) {
+    const email = row.owners?.email?.trim().toLowerCase();
+    if (!email) continue;
+    const set = emailsByUnit.get(row.unit_id) ?? new Set<string>();
+    set.add(email);
+    emailsByUnit.set(row.unit_id, set);
+  }
+
+  for (const invoice of invoices) {
+    const recipients = emailsByUnit.get(invoice.unit_id);
+    if (!recipients) continue;
+    const message = invoicePublishedEmail({
+      unitNumber: invoice.units?.unit_number ?? "",
+      periodLabel: formatPeriodLabel(invoice.billing_period_start, invoice.billing_period_end, "ro"),
+      totalAmount: invoice.total_amount,
+    });
+    for (const to of recipients) {
+      await sendEmail({ to, ...message });
+    }
+  }
 }
 
 const adjustmentSchema = z.object({

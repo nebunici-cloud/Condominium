@@ -544,7 +544,8 @@
     "adjustmentReasonPlaceholder": "ex: corecție citire contor luna trecută",
     "adjustmentReasonHint": "Obligatoriu dacă suma recalculului este diferită de 0.",
     "adjustmentError": "Nu am putut salva recalculul.",
-    "adjustmentSuccess": "Recalculul a fost salvat."
+    "adjustmentSuccess": "Recalculul a fost salvat.",
+    "debtRegisterExport": "Registru datorii (Excel)"
   },
   "payments": {
     "title": "Plăți",
@@ -617,6 +618,28 @@
     "submitReading": "Transmite indicii",
     "submitReadingConfirm": "Transmite",
     "lastReading": "Ultimul indice: {value} ({date})",
-    "noReadingYet": "Fără indici încă"
+    "noReadingYet": "Fără indici încă",
+    "announcements": "Anunțuri"
+  },
+  "announcements": {
+    "title": "Anunțuri",
+    "new": "Anunț nou",
+    "titleLabel": "Titlu",
+    "bodyLabel": "Mesaj",
+    "empty": "Niciun anunț încă.",
+    "createSuccess": "Anunț publicat.",
+    "createError": "Anunțul nu a putut fi publicat.",
+    "deleteConfirm": "Ștergeți acest anunț?",
+    "deleteSuccess": "Anunț șters."
+  },
+  "debtRegister": {
+    "sheetName": "Registru datorii",
+    "accountCodeColumn": "Cod personal",
+    "ownersColumn": "Proprietari",
+    "openingColumn": "Sold inițial",
+    "invoicedColumn": "Facturat",
+    "paidColumn": "Achitat",
+    "outstandingColumn": "Datorie curentă",
+    "totalRow": "TOTAL"
   }
 }

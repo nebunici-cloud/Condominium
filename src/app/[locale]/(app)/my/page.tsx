@@ -57,7 +57,7 @@ export default async function MyHomePage() {
     await Promise.all([
       supabase
         .from("units")
-        .select("id, tenant_id, unit_number, meters, building_id, buildings(name, address, associations(name))")
+        .select("id, tenant_id, unit_number, meters, building_id, buildings(name, address, association_id, associations(name))")
         .in("id", unitIds),
       supabase
         .from("invoices")
@@ -80,9 +80,42 @@ export default async function MyHomePage() {
         .limit(60),
     ]);
 
+  const associationIds = Array.from(
+    new Set((units ?? []).map((u) => u.buildings?.association_id).filter((v): v is string => Boolean(v)))
+  );
+  const { data: announcements } = associationIds.length
+    ? await supabase
+        .from("announcements")
+        .select("id, title, body, published_at")
+        .in("association_id", associationIds)
+        .order("published_at", { ascending: false })
+        .limit(5)
+    : { data: [] };
+
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <h1 className="mb-6 text-2xl font-semibold">{t("title")}</h1>
+
+      {(announcements ?? []).length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-2 text-sm font-medium text-muted-foreground">
+            {t("announcements")}
+          </h2>
+          <div className="flex flex-col gap-3">
+            {(announcements ?? []).map((a) => (
+              <div key={a.id} className="rounded-md border p-4">
+                <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-medium">{a.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(a.published_at.slice(0, 10))}
+                  </p>
+                </div>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{a.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="flex flex-col gap-8">
         {(units ?? []).map((unit) => {
