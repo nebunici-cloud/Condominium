@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(13);
+select plan(18);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -21,7 +21,8 @@ insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'admin-a@test.local'),
   ('22222222-2222-2222-2222-222222222222', 'owner-a@test.local'),
   ('33333333-3333-3333-3333-333333333333', 'acct-a@test.local'),
-  ('44444444-4444-4444-4444-444444444444', 'admin-b@test.local');
+  ('44444444-4444-4444-4444-444444444444', 'admin-b@test.local'),
+  ('55555555-5555-5555-5555-555555555555', 'resident-a@test.local');
 
 insert into public.tenants (id, name) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'Tenant A'),
@@ -31,7 +32,8 @@ insert into public.tenant_users (tenant_id, user_id) values
   ('aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111'),
   ('aaaaaaaa-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222'),
   ('aaaaaaaa-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333'),
-  ('aaaaaaaa-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444');
+  ('aaaaaaaa-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444'),
+  ('aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555');
 
 insert into public.user_roles (tenant_id, user_id, role_id)
 select 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', id
@@ -48,6 +50,10 @@ from public.roles where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001' and c
 insert into public.user_roles (tenant_id, user_id, role_id)
 select 'aaaaaaaa-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444', id
 from public.roles where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000002' and code = 'administrator';
+
+insert into public.user_roles (tenant_id, user_id, role_id)
+select 'aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', id
+from public.roles where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001' and code = 'owner';
 
 -- Association creation seeds per-association role capabilities via
 -- trigger (accountant gets its finance bundle for a1 here).
@@ -69,6 +75,19 @@ insert into public.invoices (id, tenant_id, unit_id, billing_period_start, billi
 
 insert into public.payments (id, tenant_id, unit_id, amount, paid_at) values
   ('ffffffff-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', 40, '2026-07-01');
+
+-- Resident linkage: resident-a owns unit 1 through a linked owner
+-- record; a second, unlinked owner exists to prove directory scoping.
+-- The July draft invoice must stay invisible to residents.
+insert into public.owners (id, tenant_id, user_id, full_name, email) values
+  ('99999999-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Resident A', 'resident-a@test.local'),
+  ('99999999-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', null, 'Unrelated Owner', null);
+
+insert into public.ownerships (tenant_id, unit_id, owner_id, share_percent) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000001', 100);
+
+insert into public.invoices (id, tenant_id, unit_id, billing_period_start, billing_period_end, status, total_amount) values
+  ('eeeeeeee-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '2026-07-01', '2026-07-31', 'draft', 50);
 
 -- === Payment-driven status trigger (still as table owner) =========
 
@@ -152,6 +171,44 @@ select is(
   'and that invoice belongs to a tenant B unit'
 );
 
+-- === Resident of unit 1 (owner role, linked owner record) =========
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select results_eq(
+  $$select id from public.invoices order by id$$,
+  $$values ('eeeeeeee-0000-0000-0000-000000000001'::uuid)$$,
+  'resident sees own unit''s published invoice; drafts and other tenants stay hidden'
+);
+
+select is(
+  (select count(*) from public.payments),
+  1::bigint,
+  'resident sees own unit''s payments without finance.payment.view'
+);
+
+select lives_ok(
+  $$insert into public.meter_readings (tenant_id, unit_id, meter_type, reading_value, reading_date, self_submitted, created_by)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', 'cold_water', 123.4, '2026-07-10', true, '55555555-5555-5555-5555-555555555555')$$,
+  'resident can self-submit a reading for their own unit'
+);
+
+select throws_ok(
+  $$insert into public.meter_readings (tenant_id, unit_id, meter_type, reading_value, reading_date, self_submitted, created_by)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000002', 'cold_water', 1, '2026-07-10', true, '55555555-5555-5555-5555-555555555555')$$,
+  '42501',
+  null,
+  'resident cannot submit a reading for someone else''s unit'
+);
+
+select is(
+  (select count(*) from public.owners),
+  1::bigint,
+  'resident sees only their own directory record, not the whole tenant'
+);
+
 -- === Accountant of tenant A =======================================
 
 reset role;
@@ -160,8 +217,8 @@ set local role authenticated;
 
 select is(
   (select count(*) from public.invoices),
-  1::bigint,
-  'accountant with finance.invoice.view sees tenant A invoices'
+  2::bigint,
+  'accountant sees tenant A invoices including drafts (holds generate)'
 );
 
 select is(
