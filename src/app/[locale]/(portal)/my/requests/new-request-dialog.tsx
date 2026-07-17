@@ -34,12 +34,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
+import {
+  maintenanceCategories,
+  maintenanceCategoryLabelKeys,
+} from "@/lib/maintenance-status";
+
 import { createMaintenanceRequest } from "./actions";
 
 type UnitOption = { id: string; label: string };
 
 const schema = z.object({
   unitId: z.string().uuid(),
+  category: z.enum(["plumbing", "electrical", "heating", "elevator", "common_area", "other"]),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(4000),
 });
@@ -57,6 +63,7 @@ export function NewRequestDialog({
 
   const defaultValues = {
     unitId: units.length === 1 ? units[0].id : "",
+    category: "other" as const,
     title: "",
     description: "",
   };
@@ -71,6 +78,7 @@ export function NewRequestDialog({
     const result = await createMaintenanceRequest({
       tenantId,
       unitId: values.unitId,
+      category: values.category,
       title: values.title,
       description: values.description || undefined,
     });
@@ -132,6 +140,30 @@ export function NewRequestDialog({
                 )}
               />
             )}
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("categoryLabel")}</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {maintenanceCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {t(maintenanceCategoryLabelKeys[category])}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="title"
