@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(23);
+select plan(32);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -286,6 +286,87 @@ select is(
   (select count(*) from public.announcements),
   0::bigint,
   'tenant B admin does not see tenant A announcements'
+);
+
+-- === Maintenance requests =========================================
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$insert into public.maintenance_requests (id, tenant_id, unit_id, created_by, title, description)
+    values ('abababab-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Leaking pipe', 'Basement')$$,
+  'resident can file a request for their own unit'
+);
+
+select throws_ok(
+  $$insert into public.maintenance_requests (tenant_id, unit_id, created_by, title)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000002', '55555555-5555-5555-5555-555555555555', 'X')$$,
+  '42501',
+  null,
+  'resident cannot file a request for a unit that is not theirs'
+);
+
+select is(
+  (select count(*) from public.maintenance_requests),
+  1::bigint,
+  'resident sees their own request'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.maintenance_requests),
+  0::bigint,
+  'another member without the manage capability sees no foreign requests'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.maintenance_requests),
+  1::bigint,
+  'admin with maintenance.request.manage sees the request'
+);
+
+select lives_ok(
+  $$update public.maintenance_requests set status = 'in_progress'
+    where id = 'abababab-0000-0000-0000-000000000001'$$,
+  'admin can triage the request'
+);
+
+select is(
+  (select status from public.maintenance_requests where id = 'abababab-0000-0000-0000-000000000001'),
+  'in_progress',
+  'triage transition took effect'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+update public.maintenance_requests set status = 'resolved'
+  where id = 'abababab-0000-0000-0000-000000000001';
+
+select is(
+  (select status from public.maintenance_requests where id = 'abababab-0000-0000-0000-000000000001'),
+  'in_progress',
+  'resident cannot change status (RLS update policy filters the row)'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.maintenance_requests),
+  0::bigint,
+  'tenant B admin sees no tenant A maintenance requests'
 );
 
 select * from finish();

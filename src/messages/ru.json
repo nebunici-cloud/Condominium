@@ -37,7 +37,9 @@
     "settings": "Настройки",
     "myHome": "Моё жильё",
     "portalView": "Режим жильца",
-    "adminView": "Администрирование"
+    "adminView": "Администрирование",
+    "maintenance": "Заявки",
+    "myRequests": "Заявки"
   },
   "auth": {
     "signInTitle": "Вход в систему",
@@ -663,6 +665,43 @@
     "noDebtors": "Текущей задолженности нет.",
     "unitColumn": "Квартира",
     "buildingColumn": "Дом",
-    "outstandingColumn": "Долг"
+    "outstandingColumn": "Долг",
+    "openRequests": "Открытые заявки"
+  },
+  "maintenance": {
+    "title": "Заявки на обслуживание",
+    "subtitle": "Проблемы, о которых сообщили жильцы, по порядку поступления.",
+    "myTitle": "Мои заявки",
+    "myEmpty": "Заявок пока нет. Сообщите о проблеме кнопкой выше.",
+    "new": "Сообщить о проблеме",
+    "unitLabel": "Квартира",
+    "unitPlaceholder": "Выберите квартиру",
+    "titleLabel": "Проблема",
+    "titlePlaceholder": "напр.: Протечка в подвале",
+    "descriptionLabel": "Подробности",
+    "submit": "Отправить",
+    "createSuccess": "Заявка отправлена.",
+    "createError": "Не удалось отправить заявку.",
+    "updateSuccess": "Заявка обновлена.",
+    "updateError": "Не удалось обновить заявку.",
+    "statusOpen": "Открыта",
+    "statusInProgress": "В работе",
+    "statusResolved": "Решена",
+    "statusRejected": "Отклонена",
+    "actionStart": "Взять в работу",
+    "actionResolve": "Решить",
+    "actionReject": "Отклонить",
+    "actionReopen": "Открыть заново",
+    "confirmTransition": "Подтвердить",
+    "resolutionLabel": "Ответ",
+    "resolutionPlaceholder": "Что сделано / причина отказа (видно жильцу)",
+    "requestColumn": "Заявка",
+    "unitColumn": "Квартира",
+    "dateColumn": "Дата",
+    "statusColumn": "Статус",
+    "activeSection": "Активные ({count})",
+    "closedSection": "Закрытые ({count})",
+    "noActive": "Активных заявок нет.",
+    "empty": "Заявок пока нет."
   }
 }
