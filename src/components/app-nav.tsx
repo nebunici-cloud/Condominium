@@ -11,6 +11,7 @@ const navItems = [
   { href: "/associations", key: "associations", requiredCapabilities: ["core.association.view"] },
   { href: "/owners", key: "owners", requiredCapabilities: ["core.owner.view"] },
   { href: "/maintenance", key: "maintenance", requiredCapabilities: ["maintenance.request.manage"] },
+  { href: "/documents", key: "documents", requiredCapabilities: ["docs.document.manage"] },
   { href: "/audit", key: "audit", requiredCapabilities: ["core.audit.view"] },
   {
     href: "/settings",

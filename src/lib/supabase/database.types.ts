@@ -334,6 +334,63 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          association_id: string
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          tenant_id: string
+          title: string
+          uploaded_by: string | null
+          visibility: string
+        }
+        Insert: {
+          association_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          tenant_id: string
+          title: string
+          uploaded_by?: string | null
+          visibility?: string
+        }
+        Update: {
+          association_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          tenant_id?: string
+          title?: string
+          uploaded_by?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_types: {
         Row: {
           association_id: string
@@ -550,6 +607,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          photo_paths: string[]
           priority: string
           resolution_note: string | null
           resolved_at: string | null
@@ -567,6 +625,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          photo_paths?: string[]
           priority?: string
           resolution_note?: string | null
           resolved_at?: string | null
@@ -584,6 +643,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          photo_paths?: string[]
           priority?: string
           resolution_note?: string | null
           resolved_at?: string | null
@@ -1336,6 +1396,10 @@ export type Database = {
     }
     Functions: {
       accept_pending_invite: { Args: never; Returns: string }
+      attach_request_photos: {
+        Args: { p_paths: string[]; p_request_id: string }
+        Returns: undefined
+      }
       audit_record: {
         Args: {
           p_action: string
