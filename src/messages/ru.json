@@ -39,7 +39,9 @@
     "portalView": "Режим жильца",
     "adminView": "Администрирование",
     "maintenance": "Заявки",
-    "myRequests": "Заявки"
+    "myRequests": "Заявки",
+    "documents": "Документы",
+    "myDocuments": "Документы"
   },
   "auth": {
     "signInTitle": "Вход в систему",
@@ -721,6 +723,38 @@
     "priorityColumn": "Приоритет",
     "overdue": "просрочено",
     "actionPlan": "Запланировать",
-    "expectedBy": "Ожидаемый срок: {date}"
+    "expectedBy": "Ожидаемый срок: {date}",
+    "photosLabel": "Фотографии (необязательно)",
+    "photosHint": "До {max} изображений, макс. 5 МБ каждое.",
+    "photoTooMany": "Не более {max} фотографий.",
+    "photoTooLarge": "Одна из фотографий больше 5 МБ.",
+    "photoUploadPartial": "Некоторые фотографии не удалось загрузить."
+  },
+  "documents": {
+    "title": "Документы",
+    "subtitle": "Библиотека документов ассоциаций: протоколы, договоры, регламенты.",
+    "myTitle": "Документы",
+    "myEmpty": "Опубликованных документов пока нет.",
+    "upload": "Загрузить документ",
+    "uploadConfirm": "Загрузить",
+    "uploadSuccess": "Документ загружен.",
+    "uploadError": "Не удалось загрузить документ.",
+    "uploadMissingFields": "Укажите ассоциацию, название и выберите файл.",
+    "uploadTooLarge": "Файл больше 20 МБ.",
+    "associationLabel": "Ассоциация",
+    "associationPlaceholder": "Выберите ассоциацию",
+    "titleLabel": "Название",
+    "titlePlaceholder": "напр.: Протокол общего собрания 2026",
+    "visibilityLabel": "Видимость",
+    "visibilityMembers": "Все жильцы",
+    "visibilityStaff": "Только администрация",
+    "fileLabel": "Файл",
+    "fileHint": "Макс. 20 МБ.",
+    "documentColumn": "Документ",
+    "associationColumn": "Ассоциация",
+    "dateColumn": "Дата",
+    "empty": "Документов пока нет.",
+    "deleteConfirm": "Удалить этот документ?",
+    "deleteSuccess": "Документ удалён."
   }
 }

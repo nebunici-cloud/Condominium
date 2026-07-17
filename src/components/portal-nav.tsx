@@ -48,6 +48,12 @@ export function PortalNav({
           >
             {t("myRequests")}
           </Link>
+          <Link
+            href="/my/documents"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            {t("myDocuments")}
+          </Link>
         </nav>
         <div className="flex items-center gap-2">
           {displayName && (

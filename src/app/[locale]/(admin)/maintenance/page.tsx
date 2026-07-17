@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSignedUrlMap } from "@/lib/storage";
 import { getCurrentCapabilities } from "@/lib/capabilities";
 import { formatDate } from "@/lib/period";
 import {
@@ -35,10 +36,16 @@ export default async function MaintenancePage() {
   const { data: requests } = await supabase
     .from("maintenance_requests")
     .select(
-      "id, title, description, status, resolution_note, created_at, category, priority, due_date, units(unit_number, buildings(name, associations(name)))"
+      "id, title, description, status, resolution_note, created_at, category, priority, due_date, photo_paths, units(unit_number, buildings(name, associations(name)))"
     )
     .order("created_at", { ascending: false })
     .limit(200);
+
+  const photoUrls = await getSignedUrlMap(
+    supabase,
+    "maintenance-photos",
+    (requests ?? []).flatMap((r) => r.photo_paths)
+  );
 
   const today = new Date().toISOString().slice(0, 10);
   const active = (requests ?? [])
@@ -80,6 +87,20 @@ export default async function MaintenancePage() {
                 <span className="font-medium">{t("resolutionLabel")}: </span>
                 {request.resolution_note}
               </p>
+            )}
+            {request.photo_paths.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {request.photo_paths.map((path) => {
+                  const url = photoUrls.get(path);
+                  if (!url) return null;
+                  return (
+                    <a key={path} href={url} target="_blank" rel="noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="size-12 rounded border object-cover" />
+                    </a>
+                  );
+                })}
+              </div>
             )}
           </TableCell>
           <TableCell className="text-muted-foreground">{unitLabel}</TableCell>

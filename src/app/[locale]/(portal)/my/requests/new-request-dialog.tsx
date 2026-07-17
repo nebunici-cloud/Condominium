@@ -38,8 +38,13 @@ import {
   maintenanceCategories,
   maintenanceCategoryLabelKeys,
 } from "@/lib/maintenance-status";
+import { sanitizeFileName } from "@/lib/storage";
+import { createClient } from "@/lib/supabase/client";
 
-import { createMaintenanceRequest } from "./actions";
+import { createMaintenanceRequest, attachRequestPhotos } from "./actions";
+
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 type UnitOption = { id: string; label: string };
 
@@ -60,6 +65,9 @@ export function NewRequestDialog({
   const t = useTranslations("maintenance");
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const defaultValues = {
     unitId: units.length === 1 ? units[0].id : "",
@@ -74,6 +82,16 @@ export function NewRequestDialog({
   });
 
   async function onSubmit(values: z.infer<typeof schema>) {
+    setFileError(null);
+    if (files.length > MAX_PHOTOS) {
+      setFileError(t("photoTooMany", { max: MAX_PHOTOS }));
+      return;
+    }
+    if (files.some((file) => file.size > MAX_PHOTO_BYTES)) {
+      setFileError(t("photoTooLarge"));
+      return;
+    }
+
     setSubmitting(true);
     const result = await createMaintenanceRequest({
       tenantId,
@@ -82,15 +100,39 @@ export function NewRequestDialog({
       title: values.title,
       description: values.description || undefined,
     });
-    setSubmitting(false);
 
-    if (result.error) {
-      toast.error(t("createError"), { description: result.error });
+    if (result.error || !result.requestId) {
+      setSubmitting(false);
+      toast.error(t("createError"), { description: result.error ?? undefined });
       return;
     }
 
+    // Photos go straight from the browser to the private bucket under
+    // the caller's own session -- the storage INSERT policy only
+    // accepts paths inside this request's folder.
+    if (files.length > 0) {
+      const supabase = createClient();
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const path = `${result.requestId}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
+        const { error: uploadError } = await supabase.storage
+          .from("maintenance-photos")
+          .upload(path, file);
+        if (!uploadError) uploaded.push(path);
+      }
+      if (uploaded.length > 0) {
+        await attachRequestPhotos({ requestId: result.requestId, paths: uploaded });
+      }
+      if (uploaded.length < files.length) {
+        toast.warning(t("photoUploadPartial"));
+      }
+    }
+
+    setSubmitting(false);
     toast.success(t("createSuccess"));
     form.reset(defaultValues);
+    setFiles([]);
+    setFileInputKey((key) => key + 1);
     setOpen(false);
   }
 
@@ -194,6 +236,24 @@ export function NewRequestDialog({
                 </FormItem>
               )}
             />
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor="request-photos">
+                {t("photosLabel")}
+              </label>
+              <input
+                key={fileInputKey}
+                id="request-photos"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
+                className="text-sm file:mr-3 file:rounded-md file:border file:bg-transparent file:px-3 file:py-1.5 file:text-sm file:font-medium"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("photosHint", { max: MAX_PHOTOS })}
+              </p>
+              {fileError && <p className="text-sm text-destructive">{fileError}</p>}
+            </div>
             <DialogFooter>
               <Button type="submit" disabled={submitting}>
                 {t("submit")}

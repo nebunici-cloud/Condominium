@@ -39,7 +39,9 @@
     "portalView": "Vizualizare locatar",
     "adminView": "Administrare",
     "maintenance": "Mentenanță",
-    "myRequests": "Solicitări"
+    "myRequests": "Solicitări",
+    "documents": "Documente",
+    "myDocuments": "Documente"
   },
   "auth": {
     "signInTitle": "Autentificare",
@@ -721,6 +723,38 @@
     "priorityColumn": "Prioritate",
     "overdue": "întârziat",
     "actionPlan": "Planifică",
-    "expectedBy": "Termen estimat: {date}"
+    "expectedBy": "Termen estimat: {date}",
+    "photosLabel": "Fotografii (opțional)",
+    "photosHint": "Până la {max} imagini, max. 5 MB fiecare.",
+    "photoTooMany": "Cel mult {max} fotografii.",
+    "photoTooLarge": "O fotografie depășește 5 MB.",
+    "photoUploadPartial": "Unele fotografii nu au putut fi încărcate."
+  },
+  "documents": {
+    "title": "Documente",
+    "subtitle": "Biblioteca de documente a asociațiilor: procese-verbale, contracte, regulamente.",
+    "myTitle": "Documente",
+    "myEmpty": "Niciun document publicat încă.",
+    "upload": "Încarcă document",
+    "uploadConfirm": "Încarcă",
+    "uploadSuccess": "Document încărcat.",
+    "uploadError": "Documentul nu a putut fi încărcat.",
+    "uploadMissingFields": "Completați asociația, titlul și alegeți un fișier.",
+    "uploadTooLarge": "Fișierul depășește 20 MB.",
+    "associationLabel": "Asociație",
+    "associationPlaceholder": "Alegeți asociația",
+    "titleLabel": "Titlu",
+    "titlePlaceholder": "ex.: Proces-verbal adunare generală 2026",
+    "visibilityLabel": "Vizibilitate",
+    "visibilityMembers": "Toți locatarii",
+    "visibilityStaff": "Doar administrația",
+    "fileLabel": "Fișier",
+    "fileHint": "Max. 20 MB.",
+    "documentColumn": "Document",
+    "associationColumn": "Asociație",
+    "dateColumn": "Data",
+    "empty": "Niciun document încă.",
+    "deleteConfirm": "Ștergeți acest document?",
+    "deleteSuccess": "Document șters."
   }
 }

@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(32);
+select plan(41);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -367,6 +367,85 @@ select is(
   (select count(*) from public.maintenance_requests),
   0::bigint,
   'tenant B admin sees no tenant A maintenance requests'
+);
+
+-- === Documents library ============================================
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$insert into public.documents (tenant_id, association_id, title, file_name, storage_path, visibility)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 'Regulament', 'regulament.pdf', 'bbbbbbbb-0000-0000-0000-000000000001/regulament.pdf', 'members')$$,
+  'admin with docs.document.manage can register a members-visible document'
+);
+
+select lives_ok(
+  $$insert into public.documents (tenant_id, association_id, title, file_name, storage_path, visibility)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 'Contract intern', 'contract.pdf', 'bbbbbbbb-0000-0000-0000-000000000001/contract.pdf', 'staff')$$,
+  'admin can register a staff-only document'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.documents),
+  1::bigint,
+  'resident sees members-visible documents but not staff-only ones'
+);
+
+select throws_ok(
+  $$insert into public.documents (tenant_id, association_id, title, file_name, storage_path)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 'X', 'x.pdf', 'bbbbbbbb-0000-0000-0000-000000000001/x.pdf')$$,
+  '42501',
+  null,
+  'resident cannot register documents'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.documents),
+  0::bigint,
+  'tenant B admin sees no tenant A documents'
+);
+
+-- === Request photo attachment RPC =================================
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$select public.attach_request_photos('abababab-0000-0000-0000-000000000001', array['abababab-0000-0000-0000-000000000001/a.jpg'])$$,
+  'request creator can attach photo paths inside the request folder'
+);
+
+select is(
+  (select array_length(photo_paths, 1) from public.maintenance_requests where id = 'abababab-0000-0000-0000-000000000001'),
+  1,
+  'attached path was recorded'
+);
+
+select throws_ok(
+  $$select public.attach_request_photos('abababab-0000-0000-0000-000000000001', array['dddddddd-0000-0000-0000-000000000002/evil.jpg'])$$,
+  'Photo path outside the request folder',
+  'paths outside the request folder are rejected'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+
+select throws_ok(
+  $$select public.attach_request_photos('abababab-0000-0000-0000-000000000001', array['abababab-0000-0000-0000-000000000001/b.jpg'])$$,
+  'Not allowed to attach photos to this request',
+  'a non-creator without triage rights cannot attach photos'
 );
 
 select * from finish();
