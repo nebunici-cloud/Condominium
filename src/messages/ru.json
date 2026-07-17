@@ -702,6 +702,25 @@
     "activeSection": "Активные ({count})",
     "closedSection": "Закрытые ({count})",
     "noActive": "Активных заявок нет.",
-    "empty": "Заявок пока нет."
+    "empty": "Заявок пока нет.",
+    "categoryLabel": "Категория",
+    "categoryPlumbing": "Сантехника",
+    "categoryElectrical": "Электрика",
+    "categoryHeating": "Отопление",
+    "categoryElevator": "Лифт",
+    "categoryCommonArea": "Общие зоны",
+    "categoryOther": "Прочее",
+    "priorityLabel": "Приоритет",
+    "priorityLow": "Низкий",
+    "priorityNormal": "Обычный",
+    "priorityHigh": "Высокий",
+    "priorityUrgent": "Срочный",
+    "dueDateLabel": "Ожидаемый срок",
+    "dueDateHint": "Виден жильцу как ожидаемый срок решения.",
+    "dueColumn": "Срок",
+    "priorityColumn": "Приоритет",
+    "overdue": "просрочено",
+    "actionPlan": "Запланировать",
+    "expectedBy": "Ожидаемый срок: {date}"
   }
 }

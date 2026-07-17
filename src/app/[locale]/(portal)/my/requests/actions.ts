@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 const createSchema = z.object({
   tenantId: z.string().uuid(),
   unitId: z.string().uuid(),
+  category: z.enum(["plumbing", "electrical", "heating", "elevator", "common_area", "other"]),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(4000).optional(),
 });
@@ -29,6 +30,7 @@ export async function createMaintenanceRequest(input: z.infer<typeof createSchem
     tenant_id: parsed.tenantId,
     unit_id: parsed.unitId,
     created_by: user.id,
+    category: parsed.category,
     title: parsed.title,
     description: parsed.description || null,
   });

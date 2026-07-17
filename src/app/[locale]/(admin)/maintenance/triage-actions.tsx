@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -12,31 +13,48 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { maintenancePriorityLabelKeys } from "@/lib/maintenance-status";
 
 import { updateMaintenanceRequest } from "./actions";
 
-// Per-row triage controls: take into work, resolve (with a note the
-// resident will see), or reject (with a note). Resolve/reject prompt
-// for the note in a small dialog.
+// Per-row triage controls. "Take into work" opens a planning dialog
+// (priority + expected resolution date the resident will see);
+// resolve/reject prompt for a resident-visible note; in-progress rows
+// can re-plan without changing status.
 export function TriageActions({
   requestId,
   status,
+  priority,
+  dueDate,
 }: {
   requestId: string;
   status: string;
+  priority: string;
+  dueDate: string | null;
 }) {
   const t = useTranslations("maintenance");
   const [busy, setBusy] = useState(false);
   const [noteDialog, setNoteDialog] = useState<null | "resolved" | "rejected">(null);
   const [note, setNote] = useState("");
+  const [planDialog, setPlanDialog] = useState<null | "start" | "edit">(null);
+  const [planPriority, setPlanPriority] = useState(priority);
+  const [planDueDate, setPlanDueDate] = useState(dueDate ?? "");
 
-  async function transition(next: "open" | "in_progress" | "resolved" | "rejected", resolutionNote?: string) {
+  async function submit(input: {
+    status: "open" | "in_progress" | "resolved" | "rejected";
+    resolutionNote?: string;
+    priority?: "low" | "normal" | "high" | "urgent";
+    dueDate?: string | null;
+  }) {
     setBusy(true);
-    const result = await updateMaintenanceRequest({
-      id: requestId,
-      status: next,
-      resolutionNote,
-    });
+    const result = await updateMaintenanceRequest({ id: requestId, ...input });
     setBusy(false);
 
     if (result.error) {
@@ -45,7 +63,16 @@ export function TriageActions({
     }
     toast.success(t("updateSuccess"));
     setNoteDialog(null);
+    setPlanDialog(null);
     setNote("");
+  }
+
+  function submitPlan() {
+    submit({
+      status: "in_progress",
+      priority: planPriority as "low" | "normal" | "high" | "urgent",
+      dueDate: planDueDate || null,
+    });
   }
 
   const isTerminal = status === "resolved" || status === "rejected";
@@ -53,8 +80,13 @@ export function TriageActions({
   return (
     <div className="flex flex-wrap justify-end gap-1">
       {status === "open" && (
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => transition("in_progress")}>
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => setPlanDialog("start")}>
           {t("actionStart")}
+        </Button>
+      )}
+      {status === "in_progress" && (
+        <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPlanDialog("edit")}>
+          {t("actionPlan")}
         </Button>
       )}
       {!isTerminal && (
@@ -68,10 +100,52 @@ export function TriageActions({
         </>
       )}
       {isTerminal && (
-        <Button variant="ghost" size="sm" disabled={busy} onClick={() => transition("open")}>
+        <Button variant="ghost" size="sm" disabled={busy} onClick={() => submit({ status: "open" })}>
           {t("actionReopen")}
         </Button>
       )}
+
+      <Dialog open={planDialog !== null} onOpenChange={(open) => !open && setPlanDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{planDialog === "start" ? t("actionStart") : t("actionPlan")}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">{t("priorityLabel")}</label>
+              <Select value={planPriority} onValueChange={setPlanPriority}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(maintenancePriorityLabelKeys).map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {t(maintenancePriorityLabelKeys[value])}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor={`due-${requestId}`}>
+                {t("dueDateLabel")}
+              </label>
+              <Input
+                id={`due-${requestId}`}
+                type="date"
+                value={planDueDate}
+                onChange={(event) => setPlanDueDate(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("dueDateHint")}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button disabled={busy} onClick={submitPlan}>
+              {t("confirmTransition")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={noteDialog !== null} onOpenChange={(open) => !open && setNoteDialog(null)}>
         <DialogContent>
@@ -94,7 +168,7 @@ export function TriageActions({
           <DialogFooter>
             <Button
               disabled={busy}
-              onClick={() => noteDialog && transition(noteDialog, note.trim() || undefined)}
+              onClick={() => noteDialog && submit({ status: noteDialog, resolutionNote: note.trim() || undefined })}
             >
               {t("confirmTransition")}
             </Button>

@@ -544,10 +544,13 @@ export type Database = {
       }
       maintenance_requests: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          due_date: string | null
           id: string
+          priority: string
           resolution_note: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -558,10 +561,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          due_date?: string | null
           id?: string
+          priority?: string
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -572,10 +578,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          due_date?: string | null
           id?: string
+          priority?: string
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null

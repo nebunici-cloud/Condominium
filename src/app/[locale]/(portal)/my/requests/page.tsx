@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/period";
 import {
+  maintenanceCategoryLabelKeys,
   maintenanceStatusBadgeClasses,
   maintenanceStatusLabelKeys,
 } from "@/lib/maintenance-status";
@@ -33,7 +34,7 @@ export default async function MyRequestsPage() {
       : Promise.resolve({ data: [] as { id: string; tenant_id: string; unit_number: string; buildings: { name: string } | null }[] }),
     supabase
       .from("maintenance_requests")
-      .select("id, unit_id, title, description, status, resolution_note, created_at")
+      .select("id, unit_id, title, description, status, resolution_note, created_at, category, due_date")
       .eq("created_by", user?.id ?? "")
       .order("created_at", { ascending: false })
       .limit(50),
@@ -66,8 +67,20 @@ export default async function MyRequestsPage() {
                   <div>
                     <CardTitle className="text-base">{request.title}</CardTitle>
                     <CardDescription>
-                      {unitLabelById.get(request.unit_id) ?? ""} ·{" "}
-                      {formatDate(request.created_at.slice(0, 10))}
+                      {[
+                        unitLabelById.get(request.unit_id),
+                        t(maintenanceCategoryLabelKeys[request.category ?? "other"]),
+                        formatDate(request.created_at.slice(0, 10)),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      {request.due_date &&
+                        request.status !== "resolved" &&
+                        request.status !== "rejected" && (
+                          <span className="mt-0.5 block font-medium text-foreground">
+                            {t("expectedBy", { date: formatDate(request.due_date) })}
+                          </span>
+                        )}
                     </CardDescription>
                   </div>
                   <Badge className={maintenanceStatusBadgeClasses[request.status] ?? ""}>

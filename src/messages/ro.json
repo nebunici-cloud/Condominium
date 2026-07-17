@@ -702,6 +702,25 @@
     "activeSection": "Active ({count})",
     "closedSection": "Închise ({count})",
     "noActive": "Nicio solicitare activă.",
-    "empty": "Nicio solicitare încă."
+    "empty": "Nicio solicitare încă.",
+    "categoryLabel": "Categorie",
+    "categoryPlumbing": "Instalații sanitare",
+    "categoryElectrical": "Electricitate",
+    "categoryHeating": "Încălzire",
+    "categoryElevator": "Ascensor",
+    "categoryCommonArea": "Spații comune",
+    "categoryOther": "Altele",
+    "priorityLabel": "Prioritate",
+    "priorityLow": "Scăzută",
+    "priorityNormal": "Normală",
+    "priorityHigh": "Ridicată",
+    "priorityUrgent": "Urgentă",
+    "dueDateLabel": "Termen estimat",
+    "dueDateHint": "Vizibil locatarului ca termen estimat de rezolvare.",
+    "dueColumn": "Termen",
+    "priorityColumn": "Prioritate",
+    "overdue": "întârziat",
+    "actionPlan": "Planifică",
+    "expectedBy": "Termen estimat: {date}"
   }
 }

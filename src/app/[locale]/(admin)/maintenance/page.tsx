@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentCapabilities } from "@/lib/capabilities";
 import { formatDate } from "@/lib/period";
 import {
+  maintenanceCategoryLabelKeys,
+  maintenancePriorityBadgeClasses,
+  maintenancePriorityLabelKeys,
+  maintenancePriorityRank,
   maintenanceStatusBadgeClasses,
   maintenanceStatusLabelKeys,
 } from "@/lib/maintenance-status";
@@ -31,12 +35,19 @@ export default async function MaintenancePage() {
   const { data: requests } = await supabase
     .from("maintenance_requests")
     .select(
-      "id, title, description, status, resolution_note, created_at, units(unit_number, buildings(name, associations(name)))"
+      "id, title, description, status, resolution_note, created_at, category, priority, due_date, units(unit_number, buildings(name, associations(name)))"
     )
     .order("created_at", { ascending: false })
     .limit(200);
 
-  const active = (requests ?? []).filter((r) => r.status === "open" || r.status === "in_progress");
+  const today = new Date().toISOString().slice(0, 10);
+  const active = (requests ?? [])
+    .filter((r) => r.status === "open" || r.status === "in_progress")
+    .sort(
+      (a, b) =>
+        (maintenancePriorityRank[a.priority] ?? 9) - (maintenancePriorityRank[b.priority] ?? 9) ||
+        a.created_at.localeCompare(b.created_at)
+    );
   const closed = (requests ?? []).filter((r) => r.status === "resolved" || r.status === "rejected");
 
   const renderRows = (rows: typeof active) =>
@@ -48,10 +59,17 @@ export default async function MaintenancePage() {
       ]
         .filter(Boolean)
         .join(" · ");
+      const overdue =
+        request.due_date !== null &&
+        request.due_date < today &&
+        (request.status === "open" || request.status === "in_progress");
       return (
         <TableRow key={request.id}>
           <TableCell>
             <p className="font-medium">{request.title}</p>
+            <p className="text-xs text-muted-foreground">
+              {t(maintenanceCategoryLabelKeys[request.category ?? "other"])}
+            </p>
             {request.description && (
               <p className="mt-0.5 max-w-md text-xs whitespace-pre-wrap text-muted-foreground">
                 {request.description}
@@ -67,13 +85,33 @@ export default async function MaintenancePage() {
           <TableCell className="text-muted-foreground">{unitLabel}</TableCell>
           <TableCell>{formatDate(request.created_at.slice(0, 10))}</TableCell>
           <TableCell>
+            {request.due_date ? (
+              <span className={overdue ? "font-semibold text-red-600" : undefined}>
+                {formatDate(request.due_date)}
+                {overdue && ` (${t("overdue")})`}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </TableCell>
+          <TableCell>
+            <Badge className={maintenancePriorityBadgeClasses[request.priority] ?? ""}>
+              {t(maintenancePriorityLabelKeys[request.priority] ?? "priorityNormal")}
+            </Badge>
+          </TableCell>
+          <TableCell>
             <Badge className={maintenanceStatusBadgeClasses[request.status] ?? ""}>
               {t(maintenanceStatusLabelKeys[request.status] ?? "statusOpen")}
             </Badge>
           </TableCell>
           {canManage && (
             <TableCell className="text-right">
-              <TriageActions requestId={request.id} status={request.status} />
+              <TriageActions
+                requestId={request.id}
+                status={request.status}
+                priority={request.priority}
+                dueDate={request.due_date}
+              />
             </TableCell>
           )}
         </TableRow>
@@ -86,6 +124,8 @@ export default async function MaintenancePage() {
         <TableHead>{t("requestColumn")}</TableHead>
         <TableHead>{t("unitColumn")}</TableHead>
         <TableHead>{t("dateColumn")}</TableHead>
+        <TableHead>{t("dueColumn")}</TableHead>
+        <TableHead>{t("priorityColumn")}</TableHead>
         <TableHead>{t("statusColumn")}</TableHead>
         {canManage && <TableHead className="text-right" />}
       </TableRow>
