@@ -37,7 +37,9 @@
     "settings": "Setări",
     "myHome": "Locuința mea",
     "portalView": "Vizualizare locatar",
-    "adminView": "Administrare"
+    "adminView": "Administrare",
+    "maintenance": "Mentenanță",
+    "myRequests": "Solicitări"
   },
   "auth": {
     "signInTitle": "Autentificare",
@@ -663,6 +665,43 @@
     "noDebtors": "Nicio datorie curentă.",
     "unitColumn": "Apartament",
     "buildingColumn": "Bloc",
-    "outstandingColumn": "Datorie"
+    "outstandingColumn": "Datorie",
+    "openRequests": "Solicitări deschise"
+  },
+  "maintenance": {
+    "title": "Solicitări de mentenanță",
+    "subtitle": "Problemele raportate de locatari, în ordinea sosirii.",
+    "myTitle": "Solicitările mele",
+    "myEmpty": "Nicio solicitare încă. Raportați o problemă cu butonul de mai sus.",
+    "new": "Raportează o problemă",
+    "unitLabel": "Apartament",
+    "unitPlaceholder": "Alegeți apartamentul",
+    "titleLabel": "Problema",
+    "titlePlaceholder": "ex.: Scurgere la subsol",
+    "descriptionLabel": "Detalii",
+    "submit": "Trimite",
+    "createSuccess": "Solicitare trimisă.",
+    "createError": "Solicitarea nu a putut fi trimisă.",
+    "updateSuccess": "Solicitare actualizată.",
+    "updateError": "Solicitarea nu a putut fi actualizată.",
+    "statusOpen": "Deschisă",
+    "statusInProgress": "În lucru",
+    "statusResolved": "Rezolvată",
+    "statusRejected": "Respinsă",
+    "actionStart": "Preia",
+    "actionResolve": "Rezolvă",
+    "actionReject": "Respinge",
+    "actionReopen": "Redeschide",
+    "confirmTransition": "Confirmă",
+    "resolutionLabel": "Răspuns",
+    "resolutionPlaceholder": "Ce s-a făcut / de ce se respinge (vizibil locatarului)",
+    "requestColumn": "Solicitare",
+    "unitColumn": "Apartament",
+    "dateColumn": "Data",
+    "statusColumn": "Status",
+    "activeSection": "Active ({count})",
+    "closedSection": "Închise ({count})",
+    "noActive": "Nicio solicitare activă.",
+    "empty": "Nicio solicitare încă."
   }
 }

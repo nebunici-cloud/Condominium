@@ -50,6 +50,11 @@ export default async function DashboardPage() {
         .is("reviewed_at", null),
     ]);
 
+  const { count: openRequests } = await supabase
+    .from("maintenance_requests")
+    .select("id", { count: "exact", head: true })
+    .in("status", ["open", "in_progress"]);
+
   const openingByUnit = new Map((openingBalances ?? []).map((b) => [b.unit_id, b.amount]));
 
   // Outstanding excludes drafts (nothing owed on an unpublished bill);
@@ -120,6 +125,7 @@ export default async function DashboardPage() {
     },
     { label: t("draftsPending"), value: String(draftCount) },
     { label: t("readingsPending"), value: String(pendingReviews ?? 0) },
+    { label: t("openRequests"), value: String(openRequests ?? 0) },
   ];
 
   return (

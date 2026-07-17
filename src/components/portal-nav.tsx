@@ -37,10 +37,18 @@ export function PortalNav({
   return (
     <header className="border-b print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-        <Link href="/my" className="flex items-center gap-2 text-sm font-semibold">
-          <Building2Icon className="size-4" />
-          {t("myHome")}
-        </Link>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link href="/my" className="flex items-center gap-2 text-sm font-semibold">
+            <Building2Icon className="size-4" />
+            {t("myHome")}
+          </Link>
+          <Link
+            href="/my/requests"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            {t("myRequests")}
+          </Link>
+        </nav>
         <div className="flex items-center gap-2">
           {displayName && (
             <p className="mr-1 hidden text-sm font-medium sm:block">{displayName}</p>
