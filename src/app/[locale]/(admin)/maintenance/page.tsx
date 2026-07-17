@@ -13,14 +13,7 @@ import {
   maintenanceStatusLabelKeys,
 } from "@/lib/maintenance-status";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 import { TriageActions } from "./triage-actions";
 // Reuses the resident portal's file-a-request dialog. Staff filing on
@@ -30,7 +23,9 @@ import { TriageActions } from "./triage-actions";
 import { NewRequestDialog } from "@/app/[locale]/(portal)/my/requests/new-request-dialog";
 
 // Staff triage queue across every association the viewer manages (RLS
-// scopes the rows). Active requests first, terminal ones below.
+// scopes the rows). Active requests first, terminal ones below. Laid
+// out as cards, not a wide table, so the triage actions are always
+// visible (a table pushed them off-screen on narrower viewports).
 export default async function MaintenancePage() {
   const t = await getTranslations("maintenance");
   const supabase = await createClient();
@@ -97,7 +92,7 @@ export default async function MaintenancePage() {
     );
   const closed = (requests ?? []).filter((r) => r.status === "resolved" || r.status === "rejected");
 
-  const renderRows = (rows: typeof active) =>
+  const renderCards = (rows: typeof active) =>
     rows.map((request) => {
       const unitLabel = [
         request.units?.buildings?.associations?.name,
@@ -110,91 +105,81 @@ export default async function MaintenancePage() {
         request.due_date !== null &&
         request.due_date < today &&
         (request.status === "open" || request.status === "in_progress");
+
       return (
-        <TableRow key={request.id}>
-          <TableCell>
-            <p className="font-medium">{request.title}</p>
-            <p className="text-xs text-muted-foreground">
-              {t(maintenanceCategoryLabelKeys[request.category ?? "other"])}
-            </p>
+        <Card key={request.id}>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium">{request.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {[t(maintenanceCategoryLabelKeys[request.category ?? "other"]), unitLabel]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {formatDate(request.created_at.slice(0, 10))}
+                  {request.due_date && (
+                    <span className={overdue ? "ml-2 font-semibold text-red-600" : "ml-2"}>
+                      {t("dueColumn")}: {formatDate(request.due_date)}
+                      {overdue && ` (${t("overdue")})`}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <Badge className={maintenancePriorityBadgeClasses[request.priority] ?? ""}>
+                  {t(maintenancePriorityLabelKeys[request.priority] ?? "priorityNormal")}
+                </Badge>
+                <Badge className={maintenanceStatusBadgeClasses[request.status] ?? ""}>
+                  {t(maintenanceStatusLabelKeys[request.status] ?? "statusOpen")}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
             {request.description && (
-              <p className="mt-0.5 max-w-md text-xs whitespace-pre-wrap text-muted-foreground">
+              <p className="text-sm whitespace-pre-wrap text-muted-foreground">
                 {request.description}
               </p>
             )}
-            {request.resolution_note && (
-              <p className="mt-1 max-w-md text-xs whitespace-pre-wrap">
-                <span className="font-medium">{t("resolutionLabel")}: </span>
-                {request.resolution_note}
-              </p>
-            )}
             {request.photo_paths.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {request.photo_paths.map((path) => {
                   const url = photoUrls.get(path);
                   if (!url) return null;
                   return (
                     <a key={path} href={url} target="_blank" rel="noreferrer">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="size-12 rounded border object-cover" />
+                      <img src={url} alt="" className="size-16 rounded-md border object-cover" />
                     </a>
                   );
                 })}
               </div>
             )}
-          </TableCell>
-          <TableCell className="text-muted-foreground">{unitLabel}</TableCell>
-          <TableCell>{formatDate(request.created_at.slice(0, 10))}</TableCell>
-          <TableCell>
-            {request.due_date ? (
-              <span className={overdue ? "font-semibold text-red-600" : undefined}>
-                {formatDate(request.due_date)}
-                {overdue && ` (${t("overdue")})`}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
+            {request.resolution_note && (
+              <p className="rounded-md bg-muted/60 p-3 text-sm whitespace-pre-wrap">
+                <span className="font-medium">{t("resolutionLabel")}: </span>
+                {request.resolution_note}
+              </p>
             )}
-          </TableCell>
-          <TableCell>
-            <Badge className={maintenancePriorityBadgeClasses[request.priority] ?? ""}>
-              {t(maintenancePriorityLabelKeys[request.priority] ?? "priorityNormal")}
-            </Badge>
-          </TableCell>
-          <TableCell>
-            <Badge className={maintenanceStatusBadgeClasses[request.status] ?? ""}>
-              {t(maintenanceStatusLabelKeys[request.status] ?? "statusOpen")}
-            </Badge>
-          </TableCell>
-          {canManage && (
-            <TableCell className="text-right">
-              <TriageActions
-                requestId={request.id}
-                status={request.status}
-                priority={request.priority}
-                dueDate={request.due_date}
-              />
-            </TableCell>
-          )}
-        </TableRow>
+            {canManage && (
+              <div className="border-t pt-3">
+                <TriageActions
+                  requestId={request.id}
+                  status={request.status}
+                  priority={request.priority}
+                  dueDate={request.due_date}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       );
     });
 
-  const header = (
-    <TableHeader>
-      <TableRow>
-        <TableHead>{t("requestColumn")}</TableHead>
-        <TableHead>{t("unitColumn")}</TableHead>
-        <TableHead>{t("dateColumn")}</TableHead>
-        <TableHead>{t("dueColumn")}</TableHead>
-        <TableHead>{t("priorityColumn")}</TableHead>
-        <TableHead>{t("statusColumn")}</TableHead>
-        {canManage && <TableHead className="text-right" />}
-      </TableRow>
-    </TableHeader>
-  );
-
   return (
-    <main className="mx-auto max-w-5xl p-4 sm:p-8">
+    <main className="mx-auto max-w-4xl p-4 sm:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
@@ -210,32 +195,22 @@ export default async function MaintenancePage() {
       ) : (
         <div className="flex flex-col gap-8">
           <section>
-            <h2 className="mb-2 text-sm font-medium text-muted-foreground">
+            <h2 className="mb-3 text-sm font-medium text-muted-foreground">
               {t("activeSection", { count: active.length })}
             </h2>
             {active.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("noActive")}</p>
             ) : (
-              <div className="overflow-x-auto rounded-md border">
-                <Table>
-                  {header}
-                  <TableBody>{renderRows(active)}</TableBody>
-                </Table>
-              </div>
+              <div className="flex flex-col gap-4">{renderCards(active)}</div>
             )}
           </section>
 
           {closed.length > 0 && (
             <section>
-              <h2 className="mb-2 text-sm font-medium text-muted-foreground">
+              <h2 className="mb-3 text-sm font-medium text-muted-foreground">
                 {t("closedSection", { count: closed.length })}
               </h2>
-              <div className="overflow-x-auto rounded-md border">
-                <Table>
-                  {header}
-                  <TableBody>{renderRows(closed)}</TableBody>
-                </Table>
-              </div>
+              <div className="flex flex-col gap-4">{renderCards(closed)}</div>
             </section>
           )}
         </div>
