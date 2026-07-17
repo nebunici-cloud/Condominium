@@ -18,9 +18,13 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PrintButton } from "@/components/print-button";
 import { computeOutstandingBalance } from "@/lib/balance";
 import { formatPeriodLabel, formatDate } from "@/lib/period";
+import { statusBadgeClasses, statusLabelKeys } from "@/lib/invoice-status";
 
-import { statusBadgeClasses, statusLabelKeys } from "../invoice-status";
-import { AdjustmentDialog } from "./adjustment-dialog";
+// The one concession to layering: the adjustment dialog (and its
+// server action) belong to the admin module, but the branded invoice
+// itself is shared between admin and portal. Importing the dialog here
+// (rendered only in the admin variant) beats duplicating the invoice.
+import { AdjustmentDialog } from "@/app/[locale]/(admin)/buildings/[id]/invoices/[invoiceId]/adjustment-dialog";
 
 // Short unit-of-measure labels matching how a real invoice prints
 // them (u.m. column) -- keyed by the allocation basis stored on each
@@ -46,26 +50,27 @@ type CalculationInput = {
   };
 };
 
-export default async function InvoiceDetailPage({
-  params,
+// The branded digital invoice, shared by the admin module (full
+// breadcrumbs, draft line editing) and the resident portal (simple
+// back link, read-only). Row-level security is what limits which
+// invoices each caller can actually load -- a resident can only ever
+// resolve invoices of their own units here.
+export async function InvoiceDetailView({
+  invoiceId,
+  expectedBuildingId,
+  variant,
 }: {
-  params: Promise<{ id: string; invoiceId: string }>;
+  invoiceId: string;
+  // Admin URLs carry the building id; verifying it keeps deep links
+  // honest (an invoice can't be viewed under another building's path).
+  expectedBuildingId?: string;
+  variant: "admin" | "portal";
 }) {
-  const { id, invoiceId } = await params;
   const t = await getTranslations("invoices");
   const tAssociations = await getTranslations("associations");
+  const tMy = await getTranslations("my");
   const locale = await getLocale();
   const supabase = await createClient();
-
-  const { data: building } = await supabase
-    .from("buildings")
-    .select("id, name, address, association_id, associations(name)")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (!building) {
-    notFound();
-  }
 
   const { data: invoice } = await supabase
     .from("invoices")
@@ -73,16 +78,33 @@ export default async function InvoiceDetailPage({
       "id, invoice_number, due_date, billing_period_start, billing_period_end, total_amount, status, unit_id, units!inner(unit_number, building_id, payment_account_code)"
     )
     .eq("id", invoiceId)
-    .eq("units.building_id", id)
     .maybeSingle();
 
   if (!invoice) {
     notFound();
   }
 
-  const context = await getCurrentCapabilities(supabase, building.association_id);
-  const capabilities = context?.capabilities ?? [];
-  const canEditLines = invoice.status === "draft" && capabilities.includes("finance.invoice.generate");
+  const buildingId = invoice.units.building_id;
+  if (expectedBuildingId && buildingId !== expectedBuildingId) {
+    notFound();
+  }
+
+  const { data: building } = await supabase
+    .from("buildings")
+    .select("id, name, address, association_id, associations(name)")
+    .eq("id", buildingId)
+    .maybeSingle();
+
+  if (!building) {
+    notFound();
+  }
+
+  const canEditLines =
+    variant === "admin" &&
+    invoice.status === "draft" &&
+    ((await getCurrentCapabilities(supabase, building.association_id))?.capabilities ?? []).includes(
+      "finance.invoice.generate"
+    );
 
   const [{ data: lines }, { data: ownerships }, { data: openingBalance }, { data: priorInvoices }, { data: priorPayments }] =
     await Promise.all([
@@ -167,19 +189,28 @@ export default async function InvoiceDetailPage({
   // line, not just the consumption number that came out of it.
   const meterRows = rows.filter((r) => r.meter);
 
+  const periodUnitLabel = `${unitNumber} — ${formatPeriodLabel(invoice.billing_period_start, invoice.billing_period_end, locale)}`;
+
   return (
     <main className="mx-auto max-w-4xl p-4 sm:p-8">
-      <Breadcrumbs
-        items={[
-          { label: tAssociations("title"), href: "/associations" },
-          { label: associationName, href: `/associations/${building.association_id}` },
-          { label: building.name, href: `/buildings/${building.id}` },
-          { label: t("title"), href: `/buildings/${building.id}/invoices` },
-          {
-            label: `${unitNumber} — ${formatPeriodLabel(invoice.billing_period_start, invoice.billing_period_end, locale)}`,
-          },
-        ]}
-      />
+      {variant === "admin" ? (
+        <Breadcrumbs
+          items={[
+            { label: tAssociations("title"), href: "/associations" },
+            { label: associationName, href: `/associations/${building.association_id}` },
+            { label: building.name, href: `/buildings/${building.id}` },
+            { label: t("title"), href: `/buildings/${building.id}/invoices` },
+            { label: periodUnitLabel },
+          ]}
+        />
+      ) : (
+        <Breadcrumbs
+          items={[
+            { label: tMy("title"), href: "/my" },
+            { label: periodUnitLabel },
+          ]}
+        />
+      )}
 
       <div className="mb-4 flex justify-end print:hidden">
         <PrintButton />

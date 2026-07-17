@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
-import { statusBadgeClasses, statusLabelKeys } from "./invoice-status";
+import { statusBadgeClasses, statusLabelKeys } from "@/lib/invoice-status";
 import { cancelInvoice, cancelInvoices, publishInvoice, publishDraftInvoices } from "./actions";
 
 type InvoiceRow = {

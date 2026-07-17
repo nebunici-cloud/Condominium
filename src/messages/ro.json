@@ -35,7 +35,9 @@
     "roles": "Roluri",
     "config": "Configurare",
     "settings": "Setări",
-    "myHome": "Locuința mea"
+    "myHome": "Locuința mea",
+    "portalView": "Vizualizare locatar",
+    "adminView": "Administrare"
   },
   "auth": {
     "signInTitle": "Autentificare",
