@@ -29,6 +29,7 @@ type RequestRow = {
   due_date: string | null;
   photo_paths: string[];
   resolution_photo_paths: string[];
+  units: { unit_number: string } | null;
 };
 
 // The resident's maintenance area: requests they filed (any) plus the
@@ -64,7 +65,7 @@ export default async function MyRequestsPage() {
     supabase
       .from("maintenance_requests")
       .select(
-        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, created_by, category, due_date, photo_paths, resolution_photo_paths"
+        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, created_by, category, due_date, photo_paths, resolution_photo_paths, units(unit_number)"
       )
       .eq("created_by", userId)
       .order("created_at", { ascending: false })
@@ -72,7 +73,7 @@ export default async function MyRequestsPage() {
     supabase
       .from("maintenance_requests")
       .select(
-        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, created_by, category, due_date, photo_paths, resolution_photo_paths"
+        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, created_by, category, due_date, photo_paths, resolution_photo_paths, units(unit_number)"
       )
       .eq("visibility", "public")
       .neq("created_by", userId)
@@ -85,13 +86,6 @@ export default async function MyRequestsPage() {
     id: unit.id,
     label: [unit.buildings?.name, `ap. ${unit.unit_number}`].filter(Boolean).join(", "),
   }));
-  const buildingOptions = Array.from(
-    new Map(
-      (units ?? [])
-        .filter((u) => u.buildings)
-        .map((u) => [u.buildings!.id, { id: u.buildings!.id, label: u.buildings!.name }])
-    ).values()
-  );
   const tenantId = (units ?? [])[0]?.tenant_id;
 
   const mineRows = (mine ?? []) as RequestRow[];
@@ -99,46 +93,31 @@ export default async function MyRequestsPage() {
   const allRows = [...mineRows, ...commonRows];
   const requestIds = allRows.map((r) => r.id);
 
-  // Follower counts + which of these I already follow; the activity
-  // log for every request; reporter names for the common feed.
-  const [{ data: followerRows }, { data: eventRows }, { data: reporterProfiles }] =
-    await Promise.all([
-      requestIds.length
-        ? supabase
-            .from("maintenance_request_followers")
-            .select("request_id, user_id")
-            .in("request_id", requestIds)
-        : Promise.resolve({ data: [] as { request_id: string; user_id: string }[] }),
-      requestIds.length
-        ? supabase
-            .from("maintenance_request_events")
-            .select("request_id, event_type, to_status, created_at")
-            .in("request_id", requestIds)
-            .order("created_at", { ascending: true })
-        : Promise.resolve({
-            data: [] as {
-              request_id: string;
-              event_type: string;
-              to_status: string | null;
-              created_at: string;
-            }[],
-          }),
-      commonRows.length
-        ? supabase
-            .from("profiles")
-            .select("id, full_name, email")
-            .in(
-              "id",
-              Array.from(
-                new Set(
-                  commonRows
-                    .map((r) => r.created_by)
-                    .filter((id): id is string => Boolean(id))
-                )
-              )
-            )
-        : Promise.resolve({ data: [] as { id: string; full_name: string | null; email: string | null }[] }),
-    ]);
+  // Follower counts + which of these I already follow, and the activity
+  // log for every request. The reporter is shown by apartment number
+  // (from the request's unit), not by name.
+  const [{ data: followerRows }, { data: eventRows }] = await Promise.all([
+    requestIds.length
+      ? supabase
+          .from("maintenance_request_followers")
+          .select("request_id, user_id")
+          .in("request_id", requestIds)
+      : Promise.resolve({ data: [] as { request_id: string; user_id: string }[] }),
+    requestIds.length
+      ? supabase
+          .from("maintenance_request_events")
+          .select("request_id, event_type, to_status, created_at")
+          .in("request_id", requestIds)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({
+          data: [] as {
+            request_id: string;
+            event_type: string;
+            to_status: string | null;
+            created_at: string;
+          }[],
+        }),
+  ]);
 
   const followerCount = new Map<string, number>();
   const iFollow = new Set<string>();
@@ -153,10 +132,6 @@ export default async function MyRequestsPage() {
     list.push({ eventType: e.event_type, toStatus: e.to_status, createdAt: e.created_at });
     eventsByRequest.set(e.request_id, list);
   }
-
-  const reporterName = new Map(
-    (reporterProfiles ?? []).map((p) => [p.id, p.full_name || p.email || ""])
-  );
 
   // Rally view: the most-supported common issues float to the top.
   commonRows.sort(
@@ -197,10 +172,10 @@ export default async function MyRequestsPage() {
                     .filter(Boolean)
                     .join(" · ")}
                 </span>
-                {isCommon && request.created_by && reporterName.get(request.created_by) && (
+                {isCommon && request.units?.unit_number && (
                   <span className="mt-0.5 block">
-                    {t("reportedBy", {
-                      name: reporterName.get(request.created_by) as string,
+                    {t("reportedByUnit", {
+                      unit: request.units.unit_number,
                       at: formatDateTime(request.created_at, locale),
                     })}
                   </span>
@@ -258,8 +233,8 @@ export default async function MyRequestsPage() {
     <main className="mx-auto max-w-3xl p-4 sm:p-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">{t("myTitle")}</h1>
-        {tenantId && (unitOptions.length > 0 || buildingOptions.length > 0) && (
-          <NewRequestDialog tenantId={tenantId} units={unitOptions} buildings={buildingOptions} />
+        {tenantId && unitOptions.length > 0 && (
+          <NewRequestDialog tenantId={tenantId} units={unitOptions} />
         )}
       </div>
 

@@ -40,7 +40,6 @@ export default async function MaintenancePage({
   // Units + buildings the admin may file against (associations they
   // manage). RLS re-checks on insert; this keeps the picker honest.
   let fileUnits: { id: string; label: string }[] = [];
-  let fileBuildings: { id: string; label: string }[] = [];
   if (canManage && context) {
     const { data: associations } = await supabase.from("associations").select("id, name");
     const manageable = new Set<string>();
@@ -51,16 +50,10 @@ export default async function MaintenancePage({
       })
     );
     if (manageable.size > 0) {
-      const [{ data: unitRows }, { data: buildingRows }] = await Promise.all([
-        supabase
-          .from("units")
-          .select("id, unit_number, buildings!inner(name, association_id, associations(name))")
-          .order("unit_number", { ascending: true }),
-        supabase
-          .from("buildings")
-          .select("id, name, association_id, associations(name)")
-          .order("name", { ascending: true }),
-      ]);
+      const { data: unitRows } = await supabase
+        .from("units")
+        .select("id, unit_number, buildings!inner(name, association_id, associations(name))")
+        .order("unit_number", { ascending: true });
       fileUnits = (unitRows ?? [])
         .filter((u) => u.buildings?.association_id && manageable.has(u.buildings.association_id))
         .map((u) => ({
@@ -68,12 +61,6 @@ export default async function MaintenancePage({
           label: [u.buildings?.associations?.name, u.buildings?.name, `ap. ${u.unit_number}`]
             .filter(Boolean)
             .join(" · "),
-        }));
-      fileBuildings = (buildingRows ?? [])
-        .filter((b) => manageable.has(b.association_id))
-        .map((b) => ({
-          id: b.id,
-          label: [b.associations?.name, b.name].filter(Boolean).join(" · "),
         }));
     }
   }
@@ -177,7 +164,7 @@ export default async function MaintenancePage({
   const renderCards = (rows: typeof active) =>
     rows.map((request) => {
       const isCommon = request.visibility === "public";
-      const building = isCommon ? request.buildings : request.units?.buildings;
+      const building = request.buildings ?? request.units?.buildings;
       const locationLabel = [
         building?.associations?.name,
         building?.name,
@@ -294,8 +281,8 @@ export default async function MaintenancePage({
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
-        {canManage && context && (fileUnits.length > 0 || fileBuildings.length > 0) && (
-          <NewRequestDialog tenantId={context.tenantId} units={fileUnits} buildings={fileBuildings} />
+        {canManage && context && fileUnits.length > 0 && (
+          <NewRequestDialog tenantId={context.tenantId} units={fileUnits} />
         )}
       </div>
 
