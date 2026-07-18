@@ -197,10 +197,15 @@ export default async function MaintenancePage({
                     .join(" · ")}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {t("reportedBy", {
-                    name: nameById.get(request.created_by ?? "") || t("unknownUser"),
-                    at: formatDateTime(request.created_at, locale),
-                  })}
+                  {request.units?.unit_number
+                    ? t("reportedByUnit", {
+                        unit: request.units.unit_number,
+                        at: formatDateTime(request.created_at, locale),
+                      })
+                    : t("reportedBy", {
+                        name: nameById.get(request.created_by ?? "") || t("unknownUser"),
+                        at: formatDateTime(request.created_at, locale),
+                      })}
                   {request.due_date && (
                     <span className={overdue ? "ml-2 font-semibold text-red-600" : "ml-2"}>
                       {t("dueColumn")}: {formatDate(request.due_date)}
