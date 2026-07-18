@@ -781,5 +781,13 @@
     "empty": "Документов пока нет.",
     "deleteConfirm": "Удалить этот документ?",
     "deleteSuccess": "Документ удалён."
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "empty": "Нет уведомлений",
+    "invoicePublished": "Счёт {number} опубликован",
+    "announcement": "Новое объявление: {title}",
+    "maintenanceStatus": "Ваша заявка обновлена: {status}",
+    "generic": "Новое уведомление"
   }
 }

@@ -6,6 +6,7 @@ import { Building2Icon } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { NotificationBell, type NotificationItem } from "@/components/notification-bell";
 
 // The resident portal's header: intentionally sparse. One brand link
 // home, the module switch for staff who also live in a building, the
@@ -14,9 +15,13 @@ import { createClient } from "@/lib/supabase/client";
 export function PortalNav({
   displayName,
   showAdminSwitch,
+  notifications,
+  unreadCount,
 }: {
   displayName: string;
   showAdminSwitch: boolean;
+  notifications: NotificationItem[];
+  unreadCount: number;
 }) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
@@ -59,6 +64,7 @@ export function PortalNav({
           {displayName && (
             <p className="mr-1 hidden text-sm font-medium sm:block">{displayName}</p>
           )}
+          <NotificationBell items={notifications} unreadCount={unreadCount} />
           {showAdminSwitch && (
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard">{t("adminView")}</Link>
