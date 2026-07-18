@@ -28,12 +28,15 @@ export function MaintenanceStatusTrack({ status }: { status: string }) {
     0,
     maintenanceStatusSteps.indexOf(status as (typeof maintenanceStatusSteps)[number])
   );
+  // Once resolved (the final step), every step reads as completed
+  // (green check) rather than leaving the last one "current" blue.
+  const isResolved = status === "resolved";
 
   return (
     <div className="flex items-center gap-1">
       {maintenanceStatusSteps.map((step, i) => {
-        const done = i < currentIndex;
-        const current = i === currentIndex;
+        const done = i < currentIndex || isResolved;
+        const current = i === currentIndex && !isResolved;
         return (
           <div key={step} className="flex items-center gap-1">
             <span

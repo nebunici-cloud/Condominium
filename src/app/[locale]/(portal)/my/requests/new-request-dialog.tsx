@@ -179,7 +179,7 @@ export function NewRequestDialog({
                 name="scope"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("scopeLabel")}</FormLabel>
+                    <FormLabel>{t("visibilityLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -187,12 +187,12 @@ export function NewRequestDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="apartment">{t("scopeApartment")}</SelectItem>
-                        <SelectItem value="common">{t("scopeCommon")}</SelectItem>
+                        <SelectItem value="apartment">{t("visibilityPrivate")}</SelectItem>
+                        <SelectItem value="common">{t("visibilityPublic")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      {field.value === "common" ? t("scopeCommonHint") : t("scopeApartmentHint")}
+                      {field.value === "common" ? t("visibilityPublicHint") : t("visibilityPrivateHint")}
                     </p>
                   </FormItem>
                 )}

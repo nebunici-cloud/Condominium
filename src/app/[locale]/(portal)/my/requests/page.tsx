@@ -190,7 +190,7 @@ export default async function MyRequestsPage() {
                 <span className="inline-flex items-center gap-1">
                   <CategoryIcon category={request.category} />
                   {[
-                    isCommon ? t("scopeCommon") : t("scopeApartment"),
+                    isCommon ? t("visibilityPublic") : t("visibilityPrivate"),
                     t(maintenanceCategoryLabelKeys[request.category ?? "other"]),
                     formatDate(request.created_at.slice(0, 10)),
                   ]

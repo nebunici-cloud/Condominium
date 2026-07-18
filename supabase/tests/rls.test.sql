@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(56);
+select plan(57);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -391,6 +391,18 @@ select lives_ok(
   $$insert into public.maintenance_requests (id, tenant_id, building_id, created_by, title, visibility)
     values ('abababab-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Elevator down', 'public')$$,
   'resident can file a public common-area request for their own building'
+);
+
+-- Regression: the app inserts with RETURNING (.insert().select()), which
+-- re-checks the SELECT policy against the new row. The creator must be
+-- able to read their row back mid-INSERT even though the visibility
+-- function can't see the uncommitted row. (Private/unit-scoped so it
+-- stays invisible to the neighbour checks below.)
+select lives_ok(
+  $$insert into public.maintenance_requests (tenant_id, unit_id, created_by, title, visibility)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Returning-path check', 'private')
+    returning id$$,
+  'insert ... returning (the app create path) passes the select policy for the creator'
 );
 
 select throws_ok(
