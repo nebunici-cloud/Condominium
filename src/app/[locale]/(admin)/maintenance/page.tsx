@@ -108,9 +108,10 @@ export default async function MaintenancePage({
     ].filter((id): id is string => Boolean(id)))
   );
   const { data: profiles } = userIds.length
-    ? await supabase.from("profiles").select("id, full_name, email").in("id", userIds)
+    ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
     : { data: [] };
-  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name || p.email || ""]));
+  // Names only -- never the email address (it would leak on the card).
+  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name || ""]));
 
   const photoUrls = await getSignedUrlMap(
     supabase,
@@ -165,11 +166,9 @@ export default async function MaintenancePage({
     rows.map((request) => {
       const isCommon = request.visibility === "public";
       const building = request.buildings ?? request.units?.buildings;
-      const locationLabel = [
-        building?.associations?.name,
-        building?.name,
-        request.units ? `ap. ${request.units.unit_number}` : null,
-      ]
+      // Apartment is shown in the "reported by" line, so keep the
+      // location line to association + building only.
+      const locationLabel = [building?.associations?.name, building?.name]
         .filter(Boolean)
         .join(" · ");
       const overdue =
@@ -206,12 +205,14 @@ export default async function MaintenancePage({
                         name: nameById.get(request.created_by ?? "") || t("unknownUser"),
                         at: formatDateTime(request.created_at, locale),
                       })}
-                  {request.due_date && (
-                    <span className={overdue ? "ml-2 font-semibold text-red-600" : "ml-2"}>
-                      {t("dueColumn")}: {formatDate(request.due_date)}
-                      {overdue && ` (${t("overdue")})`}
-                    </span>
-                  )}
+                  {request.due_date &&
+                    request.status !== "resolved" &&
+                    request.status !== "rejected" && (
+                      <span className={overdue ? "ml-2 font-semibold text-red-600" : "ml-2"}>
+                        {t("dueColumn")}: {formatDate(request.due_date)}
+                        {overdue && ` (${t("overdue")})`}
+                      </span>
+                    )}
                   {isCommon && affected > 0 && (
                     <span className="ml-2">· {t("affectedHouseholds", { count: affected })}</span>
                   )}

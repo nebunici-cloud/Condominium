@@ -72,7 +72,7 @@ export function NewRequestDialog({
   const [fileError, setFileError] = useState<string | null>(null);
 
   const defaultValues = {
-    visibility: "private" as "private" | "public",
+    visibility: "public" as "private" | "public",
     unitId: units.length === 1 ? units[0].id : "",
     category: "other" as const,
     title: "",
