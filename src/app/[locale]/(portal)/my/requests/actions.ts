@@ -5,23 +5,19 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 
-const createSchema = z
-  .object({
-    tenantId: z.string().uuid(),
-    scope: z.enum(["apartment", "common"]),
-    unitId: z.string().uuid().optional(),
-    buildingId: z.string().uuid().optional(),
-    category: z.enum(["plumbing", "electrical", "heating", "elevator", "common_area", "other"]),
-    title: z.string().trim().min(1).max(200),
-    description: z.string().trim().max(4000).optional(),
-  })
-  .refine((v) => (v.scope === "apartment" ? !!v.unitId : !!v.buildingId), {
-    message: "unit or building required",
-  });
+const createSchema = z.object({
+  tenantId: z.string().uuid(),
+  unitId: z.string().uuid(),
+  // Private = reporter + staff only; public = visible to the building's
+  // residents so the same issue isn't reported many times. Either way the
+  // request is anchored to the reporter's unit.
+  visibility: z.enum(["private", "public"]),
+  category: z.enum(["plumbing", "electrical", "heating", "elevator", "common_area", "other"]),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(4000).optional(),
+});
 
-// Apartment requests are private (reporter + staff); common-area
-// requests are public to the building's residents. Authorization is
-// the maintenance_requests insert policy (own unit / own building, or
+// Authorization is the maintenance_requests insert policy (own unit, or
 // staff filing on a resident's behalf).
 export async function createMaintenanceRequest(input: z.infer<typeof createSchema>) {
   const parsed = createSchema.parse(input);
@@ -34,14 +30,13 @@ export async function createMaintenanceRequest(input: z.infer<typeof createSchem
     return { error: "Not authenticated", requestId: null };
   }
 
-  const isCommon = parsed.scope === "common";
   const { data, error } = await supabase
     .from("maintenance_requests")
     .insert({
       tenant_id: parsed.tenantId,
-      unit_id: isCommon ? null : parsed.unitId!,
-      building_id: isCommon ? parsed.buildingId! : null,
-      visibility: isCommon ? "public" : "private",
+      unit_id: parsed.unitId,
+      building_id: null,
+      visibility: parsed.visibility,
       created_by: user.id,
       category: parsed.category,
       title: parsed.title,

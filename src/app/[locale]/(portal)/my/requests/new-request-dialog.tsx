@@ -45,26 +45,23 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 type Option = { id: string; label: string };
 
 const schema = z.object({
-  scope: z.enum(["apartment", "common"]),
-  unitId: z.string().optional(),
-  buildingId: z.string().optional(),
+  visibility: z.enum(["private", "public"]),
+  unitId: z.string().min(1),
   category: z.enum(["plumbing", "electrical", "heating", "elevator", "common_area", "other"]),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(4000),
 });
 
-// Shared file-a-request dialog. Apartment = a private request for one
-// unit; common area = a public request for a building (visible to its
-// residents). Residents get their own units/buildings; staff get the
-// units/buildings they manage.
+// Shared file-a-request dialog. Every request is anchored to a unit; the
+// visibility toggle decides whether it's private (reporter + staff) or
+// public (visible to the building's residents). Residents get their own
+// units; staff get the units they manage.
 export function NewRequestDialog({
   tenantId,
   units,
-  buildings = [],
 }: {
   tenantId: string;
   units: Option[];
-  buildings?: Option[];
 }) {
   const t = useTranslations("maintenance");
   const [open, setOpen] = useState(false);
@@ -73,13 +70,9 @@ export function NewRequestDialog({
   const [fileInputKey, setFileInputKey] = useState(0);
   const [fileError, setFileError] = useState<string | null>(null);
 
-  const canApartment = units.length > 0;
-  const canCommon = buildings.length > 0;
-
   const defaultValues = {
-    scope: (canApartment ? "apartment" : "common") as "apartment" | "common",
+    visibility: "private" as "private" | "public",
     unitId: units.length === 1 ? units[0].id : "",
-    buildingId: buildings.length === 1 ? buildings[0].id : "",
     category: "other" as const,
     title: "",
     description: "",
@@ -89,16 +82,11 @@ export function NewRequestDialog({
     resolver: zodResolver(schema),
     defaultValues,
   });
-  const scope = form.watch("scope");
 
   async function onSubmit(values: z.infer<typeof schema>) {
     setFileError(null);
-    if (values.scope === "apartment" && !values.unitId) {
+    if (!values.unitId) {
       form.setError("unitId", { message: t("unitRequired") });
-      return;
-    }
-    if (values.scope === "common" && !values.buildingId) {
-      form.setError("buildingId", { message: t("buildingRequired") });
       return;
     }
     if (files.length > MAX_PHOTOS) {
@@ -113,9 +101,8 @@ export function NewRequestDialog({
     setSubmitting(true);
     const result = await createMaintenanceRequest({
       tenantId,
-      scope: values.scope,
-      unitId: values.scope === "apartment" ? values.unitId : undefined,
-      buildingId: values.scope === "common" ? values.buildingId : undefined,
+      unitId: values.unitId,
+      visibility: values.visibility,
       category: values.category,
       title: values.title,
       description: values.description || undefined,
@@ -173,33 +160,36 @@ export function NewRequestDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            {canApartment && canCommon && (
-              <FormField
-                control={form.control}
-                name="scope"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("visibilityLabel")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="apartment">{t("visibilityPrivate")}</SelectItem>
-                        <SelectItem value="common">{t("visibilityPublic")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {field.value === "common" ? t("visibilityPublicHint") : t("visibilityPrivateHint")}
-                    </p>
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="visibility"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("visibilityLabel")}</FormLabel>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={field.value === "private" ? "default" : "outline"}
+                      onClick={() => field.onChange("private")}
+                    >
+                      {t("visibilityPrivate")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={field.value === "public" ? "default" : "outline"}
+                      onClick={() => field.onChange("public")}
+                    >
+                      {t("visibilityPublic")}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {field.value === "public" ? t("visibilityPublicHint") : t("visibilityPrivateHint")}
+                  </p>
+                </FormItem>
+              )}
+            />
 
-            {scope === "apartment" && units.length > 1 && (
+            {units.length > 1 && (
               <FormField
                 control={form.control}
                 name="unitId"
@@ -216,33 +206,6 @@ export function NewRequestDialog({
                         {units.map((unit) => (
                           <SelectItem key={unit.id} value={unit.id}>
                             {unit.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {scope === "common" && buildings.length > 1 && (
-              <FormField
-                control={form.control}
-                name="buildingId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("buildingLabel")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t("buildingPlaceholder")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {buildings.map((building) => (
-                          <SelectItem key={building.id} value={building.id}>
-                            {building.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
