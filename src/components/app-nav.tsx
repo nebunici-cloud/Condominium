@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { NotificationBell, type NotificationItem } from "@/components/notification-bell";
 
 const navItems = [
   { href: "/dashboard", key: "dashboard", requiredCapabilities: ["core.association.view"] },
@@ -25,6 +26,8 @@ export function AppNav({
   displayName,
   roleLabels,
   showPortalSwitch,
+  notifications,
+  unreadCount,
 }: {
   capabilities: string[];
   displayName: string;
@@ -32,6 +35,8 @@ export function AppNav({
   // Shown to staff who also own/occupy a unit: switches to the
   // resident portal module.
   showPortalSwitch: boolean;
+  notifications: NotificationItem[];
+  unreadCount: number;
 }) {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
@@ -76,6 +81,7 @@ export function AppNav({
               )}
             </div>
           )}
+          <NotificationBell items={notifications} unreadCount={unreadCount} />
           {showPortalSwitch && (
             <Button variant="ghost" size="sm" asChild>
               <Link href="/my">{t("portalView")}</Link>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getAppSession } from "@/lib/app-session";
+import { loadNotifications } from "@/lib/notifications";
 import { PortalNav } from "@/components/portal-nav";
 import { OnboardingForm } from "@/components/onboarding-form";
 
@@ -26,12 +27,15 @@ export default async function PortalLayout({
   }
 
   const { session } = result;
+  const { items, unreadCount } = await loadNotifications();
 
   return (
     <div className="flex min-h-full flex-col">
       <PortalNav
         displayName={session.displayName}
         showAdminSwitch={session.isStaff}
+        notifications={items}
+        unreadCount={unreadCount}
       />
       <div className="flex-1">{children}</div>
     </div>

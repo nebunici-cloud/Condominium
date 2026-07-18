@@ -781,5 +781,13 @@
     "empty": "Niciun document încă.",
     "deleteConfirm": "Ștergeți acest document?",
     "deleteSuccess": "Document șters."
+  },
+  "notifications": {
+    "title": "Notificări",
+    "empty": "Nicio notificare",
+    "invoicePublished": "Factura {number} a fost publicată",
+    "announcement": "Anunț nou: {title}",
+    "maintenanceStatus": "Solicitarea dvs. a fost actualizată: {status}",
+    "generic": "Notificare nouă"
   }
 }

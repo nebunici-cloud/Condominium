@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(50);
+select plan(56);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -532,6 +532,56 @@ select throws_ok(
   $$select public.attach_request_photos('abababab-0000-0000-0000-000000000001', array['abababab-0000-0000-0000-000000000001/b.jpg'])$$,
   'Not allowed to attach photos to this request',
   'a non-creator without triage rights cannot attach photos'
+);
+
+-- === Notifications =================================================
+-- By now two fan-out triggers have fired for resident A: the admin's
+-- announcement, and the admin taking their maintenance request into
+-- work (status_changed, actor != reporter).
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.notifications),
+  2::bigint,
+  'resident is notified of the announcement and their request status change'
+);
+
+select is(
+  (select count(*) from public.notifications where read_at is null),
+  2::bigint,
+  'both notifications start unread'
+);
+
+select lives_ok(
+  $$update public.notifications set read_at = now() where user_id = auth.uid()$$,
+  'a user can mark their own notifications read'
+);
+
+select is(
+  (select count(*) from public.notifications where read_at is null),
+  0::bigint,
+  'marking read clears the unread count'
+);
+
+select throws_ok(
+  $$insert into public.notifications (tenant_id, user_id, type)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'x')$$,
+  '42501',
+  null,
+  'clients cannot write notifications directly (trigger-only, insert revoked)'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.notifications),
+  0::bigint,
+  'a member with no unit and no requests sees no notifications, including others'
 );
 
 select * from finish();

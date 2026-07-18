@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { getAppSession } from "@/lib/app-session";
+import { loadNotifications } from "@/lib/notifications";
 import { AppNav } from "@/components/app-nav";
 import { OnboardingForm } from "@/components/onboarding-form";
 
@@ -37,6 +38,7 @@ export default async function AdminLayout({
       session.roles.map((role) => (tRoles.has(role.code) ? tRoles(role.code) : role.name))
     )
   );
+  const { items, unreadCount } = await loadNotifications();
 
   return (
     <div className="flex min-h-full flex-col">
@@ -45,6 +47,8 @@ export default async function AdminLayout({
         displayName={session.displayName}
         roleLabels={roleLabels}
         showPortalSwitch={session.myUnitIds.length > 0}
+        notifications={items}
+        unreadCount={unreadCount}
       />
       <div className="flex-1">{children}</div>
     </div>
