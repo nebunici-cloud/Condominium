@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/form";
 import { maintenanceCategories, maintenanceCategoryLabelKeys } from "@/lib/maintenance-status";
 import { sanitizeFileName } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 import { createMaintenanceRequest, attachRequestPhotos } from "./actions";
@@ -166,21 +167,47 @@ export function NewRequestDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("visibilityLabel")}</FormLabel>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={field.value === "private" ? "default" : "outline"}
-                      onClick={() => field.onChange("private")}
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "text-sm",
+                        field.value === "private"
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                      )}
                     >
                       {t("visibilityPrivate")}
-                    </Button>
-                    <Button
+                    </span>
+                    <button
                       type="button"
-                      variant={field.value === "public" ? "default" : "outline"}
-                      onClick={() => field.onChange("public")}
+                      role="switch"
+                      aria-checked={field.value === "public"}
+                      aria-label={t("visibilityLabel")}
+                      onClick={() =>
+                        field.onChange(field.value === "public" ? "private" : "public")
+                      }
+                      className={cn(
+                        "relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        field.value === "public" ? "bg-sky-600" : "bg-slate-300 dark:bg-slate-600"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "inline-block size-6 transform rounded-full bg-white shadow transition-transform",
+                          field.value === "public" ? "translate-x-7" : "translate-x-0.5"
+                        )}
+                      />
+                    </button>
+                    <span
+                      className={cn(
+                        "text-sm",
+                        field.value === "public"
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                      )}
                     >
                       {t("visibilityPublic")}
-                    </Button>
+                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {field.value === "public" ? t("visibilityPublicHint") : t("visibilityPrivateHint")}

@@ -767,7 +767,7 @@
     "visibilityPublic": "Publică",
     "visibilityPrivateHint": "Vizibilă doar pentru dvs. și personal. Pentru probleme din apartamentul dvs.",
     "visibilityPublicHint": "Vizibilă tuturor locatarilor blocului, ca să nu se raporteze de mai multe ori. Pentru probleme care afectează mai mulți locatari (lift, hol, curte, etc.).",
-    "reportedByUnit": "Raportat din ap. {unit} · {at}"
+    "reportedByUnit": "Raportat de Ap. {unit} · {at}"
   },
   "documents": {
     "title": "Documente",
