@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(41);
+select plan(50);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -31,7 +31,8 @@ insert into auth.users (id, email) values
   ('22222222-2222-2222-2222-222222222222', 'owner-a@test.local'),
   ('33333333-3333-3333-3333-333333333333', 'acct-a@test.local'),
   ('44444444-4444-4444-4444-444444444444', 'admin-b@test.local'),
-  ('55555555-5555-5555-5555-555555555555', 'resident-a@test.local');
+  ('55555555-5555-5555-5555-555555555555', 'resident-a@test.local'),
+  ('66666666-6666-6666-6666-666666666666', 'resident-a2@test.local');
 
 insert into public.tenants (id, name) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'Tenant A'),
@@ -42,7 +43,8 @@ insert into public.tenant_users (tenant_id, user_id) values
   ('aaaaaaaa-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222'),
   ('aaaaaaaa-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333'),
   ('aaaaaaaa-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444'),
-  ('aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555');
+  ('aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555'),
+  ('aaaaaaaa-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666');
 
 insert into public.user_roles (tenant_id, user_id, role_id)
 select 'aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', id
@@ -64,6 +66,10 @@ insert into public.user_roles (tenant_id, user_id, role_id)
 select 'aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', id
 from public.roles where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001' and code = 'owner';
 
+insert into public.user_roles (tenant_id, user_id, role_id)
+select 'aaaaaaaa-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', id
+from public.roles where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001' and code = 'owner';
+
 -- Association creation seeds per-association role capabilities via
 -- trigger (accountant gets its finance bundle for a1 here).
 insert into public.associations (id, tenant_id, name) values
@@ -76,6 +82,7 @@ insert into public.buildings (id, tenant_id, association_id, name) values
 
 insert into public.units (id, tenant_id, building_id, unit_number) values
   ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', '1'),
+  ('dddddddd-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', '2'),
   ('dddddddd-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000002', '1');
 
 insert into public.invoices (id, tenant_id, unit_id, billing_period_start, billing_period_end, status, total_amount) values
@@ -90,10 +97,15 @@ insert into public.payments (id, tenant_id, unit_id, amount, paid_at) values
 -- The July draft invoice must stay invisible to residents.
 insert into public.owners (id, tenant_id, user_id, full_name, email) values
   ('99999999-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Resident A', 'resident-a@test.local'),
-  ('99999999-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', null, 'Unrelated Owner', null);
+  ('99999999-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', null, 'Unrelated Owner', null),
+  ('99999999-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', 'Resident A2', 'resident-a2@test.local');
 
+-- Resident A2 owns unit 2 in the same building -- used to prove a
+-- second building resident sees public common requests but not the
+-- private unit request of a neighbour.
 insert into public.ownerships (tenant_id, unit_id, owner_id, share_percent) values
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000001', 100);
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000001', 100),
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000003', '99999999-0000-0000-0000-000000000003', 100);
 
 insert into public.invoices (id, tenant_id, unit_id, billing_period_start, billing_period_end, status, total_amount) values
   ('eeeeeeee-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', '2026-07-01', '2026-07-31', 'draft', 50);
@@ -134,7 +146,7 @@ set local role authenticated;
 
 select is(
   (select count(*) from public.units),
-  1::bigint,
+  2::bigint,
   'tenant A member sees exactly tenant A units'
 );
 
@@ -367,6 +379,80 @@ select is(
   (select count(*) from public.maintenance_requests),
   0::bigint,
   'tenant B admin sees no tenant A maintenance requests'
+);
+
+-- === Public/common requests, followers, activity events ===========
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$insert into public.maintenance_requests (id, tenant_id, building_id, created_by, title, visibility)
+    values ('abababab-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Elevator down', 'public')$$,
+  'resident can file a public common-area request for their own building'
+);
+
+select throws_ok(
+  $$insert into public.maintenance_requests (tenant_id, building_id, created_by, title, visibility)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000002', '55555555-5555-5555-5555-555555555555', 'X', 'public')$$,
+  '42501',
+  null,
+  'resident cannot file a common request for a building outside their scope'
+);
+
+select is(
+  (select count(*) from public.maintenance_request_events where request_id = 'abababab-0000-0000-0000-000000000002'),
+  1::bigint,
+  'filing a request auto-logs a created activity event (visible to the creator)'
+);
+
+select throws_ok(
+  $$insert into public.maintenance_request_events (tenant_id, request_id, event_type)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 'abababab-0000-0000-0000-000000000002', 'status_changed')$$,
+  '42501',
+  null,
+  'clients cannot write activity events directly (trigger-only, insert revoked)'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"66666666-6666-6666-6666-666666666666","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.maintenance_requests),
+  1::bigint,
+  'a second building resident sees the public common request but not a neighbour''s private request'
+);
+
+select is(
+  (select count(*) from public.maintenance_request_events where request_id = 'abababab-0000-0000-0000-000000000002'),
+  1::bigint,
+  'a building resident can read the public request''s activity log'
+);
+
+select lives_ok(
+  $$insert into public.maintenance_request_followers (request_id, tenant_id, user_id)
+    values ('abababab-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666')$$,
+  'a building resident can follow (affects-me-too) a public request'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select count(*) from public.maintenance_requests),
+  0::bigint,
+  'a tenant member with no unit in the building sees neither the public nor the private request'
+);
+
+select throws_ok(
+  $$insert into public.maintenance_request_followers (request_id, tenant_id, user_id)
+    values ('abababab-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222')$$,
+  '42501',
+  null,
+  'a member who cannot view the request cannot follow it'
 );
 
 -- === Documents library ============================================
