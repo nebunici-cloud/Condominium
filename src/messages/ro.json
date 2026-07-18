@@ -761,7 +761,12 @@
     "allPriorities": "Toate prioritățile",
     "allBuildings": "Toate blocurile",
     "clearFilters": "Resetează filtrele",
-    "noMatches": "Nicio solicitare nu corespunde filtrelor"
+    "noMatches": "Nicio solicitare nu corespunde filtrelor",
+    "visibilityLabel": "Vizibilitate",
+    "visibilityPrivate": "Privată",
+    "visibilityPublic": "Publică",
+    "visibilityPrivateHint": "Vizibilă doar pentru dvs. și personal. Pentru probleme din apartamentul dvs.",
+    "visibilityPublicHint": "Vizibilă tuturor locatarilor blocului, ca să nu se raporteze de mai multe ori. Pentru probleme care afectează mai mulți locatari (lift, hol, curte, etc.)."
   },
   "documents": {
     "title": "Documente",

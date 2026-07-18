@@ -181,7 +181,7 @@ export default async function MaintenancePage({
       const locationLabel = [
         building?.associations?.name,
         building?.name,
-        isCommon ? t("scopeCommon") : request.units ? `ap. ${request.units.unit_number}` : null,
+        request.units ? `ap. ${request.units.unit_number}` : null,
       ]
         .filter(Boolean)
         .join(" · ");
@@ -200,7 +200,7 @@ export default async function MaintenancePage({
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{request.title}</p>
                   <Badge variant={isCommon ? "default" : "secondary"}>
-                    {isCommon ? t("scopeCommon") : t("scopeApartment")}
+                    {isCommon ? t("visibilityPublic") : t("visibilityPrivate")}
                   </Badge>
                 </div>
                 <p className="inline-flex items-center gap-1 text-sm text-muted-foreground">
