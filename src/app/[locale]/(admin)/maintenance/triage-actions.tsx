@@ -21,8 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { maintenancePriorityLabelKeys } from "@/lib/maintenance-status";
+import { sanitizeFileName } from "@/lib/storage";
+import { createClient } from "@/lib/supabase/client";
 
 import { updateMaintenanceRequest } from "./actions";
+
+const MAX_RESOLUTION_PHOTOS = 5;
 
 // Per-row triage controls. "Take into work" opens a planning dialog
 // (priority + expected resolution date the resident will see);
@@ -46,12 +50,15 @@ export function TriageActions({
   const [planDialog, setPlanDialog] = useState<null | "start" | "edit">(null);
   const [planPriority, setPlanPriority] = useState(priority);
   const [planDueDate, setPlanDueDate] = useState(dueDate ?? "");
+  const [noteFiles, setNoteFiles] = useState<File[]>([]);
+  const [noteFileKey, setNoteFileKey] = useState(0);
 
   async function submit(input: {
     status: "open" | "in_progress" | "resolved" | "rejected";
     resolutionNote?: string;
     priority?: "low" | "normal" | "high" | "urgent";
     dueDate?: string | null;
+    resolutionPhotoPaths?: string[];
   }) {
     setBusy(true);
     const result = await updateMaintenanceRequest({ id: requestId, ...input });
@@ -65,6 +72,33 @@ export function TriageActions({
     setNoteDialog(null);
     setPlanDialog(null);
     setNote("");
+    setNoteFiles([]);
+    setNoteFileKey((k) => k + 1);
+  }
+
+  // Resolve/reject: optionally upload "after" photos of the fixed
+  // issue (staff hold the update right, so a direct upload into the
+  // request's folder is authorized by the storage policy), then
+  // transition. Rejection can carry photos too but usually won't.
+  async function submitNote() {
+    if (!noteDialog) return;
+    let resolutionPhotoPaths: string[] | undefined;
+    if (noteDialog === "resolved" && noteFiles.length > 0) {
+      setBusy(true);
+      const supabase = createClient();
+      const uploaded: string[] = [];
+      for (const file of noteFiles.slice(0, MAX_RESOLUTION_PHOTOS)) {
+        const path = `${requestId}/resolution-${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
+        const { error } = await supabase.storage.from("maintenance-photos").upload(path, file);
+        if (!error) uploaded.push(path);
+      }
+      resolutionPhotoPaths = uploaded;
+    }
+    await submit({
+      status: noteDialog,
+      resolutionNote: note.trim() || undefined,
+      resolutionPhotoPaths,
+    });
   }
 
   function submitPlan() {
@@ -165,11 +199,24 @@ export function TriageActions({
             className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
             placeholder={t("resolutionPlaceholder")}
           />
+          {noteDialog === "resolved" && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor={`resphoto-${requestId}`}>
+                {t("resolutionPhotosLabel")}
+              </label>
+              <input
+                key={noteFileKey}
+                id={`resphoto-${requestId}`}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(event) => setNoteFiles(Array.from(event.target.files ?? []))}
+                className="text-sm file:mr-3 file:rounded-md file:border file:bg-transparent file:px-3 file:py-1.5 file:text-sm file:font-medium"
+              />
+            </div>
+          )}
           <DialogFooter>
-            <Button
-              disabled={busy}
-              onClick={() => noteDialog && submit({ status: noteDialog, resolutionNote: note.trim() || undefined })}
-            >
+            <Button disabled={busy} onClick={submitNote}>
               {t("confirmTransition")}
             </Button>
           </DialogFooter>

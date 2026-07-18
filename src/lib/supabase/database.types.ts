@@ -599,8 +599,82 @@ export type Database = {
           },
         ]
       }
+      maintenance_request_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          note: string | null
+          request_id: string
+          tenant_id: string
+          to_status: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          request_id: string
+          tenant_id: string
+          to_status?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          request_id?: string
+          tenant_id?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_request_followers: {
+        Row: {
+          created_at: string
+          request_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          request_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          request_id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_request_followers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_requests: {
         Row: {
+          building_id: string | null
           category: string | null
           created_at: string
           created_by: string | null
@@ -610,15 +684,18 @@ export type Database = {
           photo_paths: string[]
           priority: string
           resolution_note: string | null
+          resolution_photo_paths: string[]
           resolved_at: string | null
           resolved_by: string | null
           status: string
           tenant_id: string
           title: string
-          unit_id: string
+          unit_id: string | null
           updated_at: string
+          visibility: string
         }
         Insert: {
+          building_id?: string | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -628,15 +705,18 @@ export type Database = {
           photo_paths?: string[]
           priority?: string
           resolution_note?: string | null
+          resolution_photo_paths?: string[]
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
           tenant_id: string
           title: string
-          unit_id: string
+          unit_id?: string | null
           updated_at?: string
+          visibility?: string
         }
         Update: {
+          building_id?: string | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -646,13 +726,15 @@ export type Database = {
           photo_paths?: string[]
           priority?: string
           resolution_note?: string | null
+          resolution_photo_paths?: string[]
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
           tenant_id?: string
           title?: string
-          unit_id?: string
+          unit_id?: string | null
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -667,6 +749,13 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
             referencedColumns: ["id"]
           },
         ]
@@ -1470,6 +1559,7 @@ export type Database = {
         Returns: string
       }
       unit_association_id: { Args: { p_unit_id: string }; Returns: string }
+      user_building_ids: { Args: never; Returns: string[] }
       user_unit_ids: { Args: never; Returns: string[] }
     }
     Enums: {

@@ -27,6 +27,20 @@ export function endOfMonth(dateStr: string): string {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
 }
 
+// dd.mm.yyyy HH:MM for activity timelines, rendered in the local
+// market timezone (Chișinău) so event times read naturally rather
+// than in UTC.
+export function formatDateTime(isoString: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Chisinau",
+  }).format(new Date(isoString));
+}
+
 // "2026-06" (an <input type="month"> value) -> the full calendar
 // month's date range.
 export function monthToRange(month: string): { start: string; end: string } {

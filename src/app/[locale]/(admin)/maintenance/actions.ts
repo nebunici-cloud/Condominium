@@ -13,6 +13,9 @@ const updateSchema = z.object({
   // Expected resolution date, shown to the resident as an estimate.
   // null clears it; undefined leaves it untouched.
   dueDate: z.iso.date().nullable().optional(),
+  // Photos of the fixed issue, uploaded browser-side before this call
+  // (staff hold the update right, so no RPC needed).
+  resolutionPhotoPaths: z.array(z.string().min(1)).max(10).optional(),
 });
 
 // Triage transition. Authorization is the maintenance_requests_update
@@ -40,6 +43,9 @@ export async function updateMaintenanceRequest(input: z.infer<typeof updateSchem
       resolved_by: isTerminal ? user.id : null,
       ...(parsed.priority !== undefined ? { priority: parsed.priority } : {}),
       ...(parsed.dueDate !== undefined ? { due_date: parsed.dueDate } : {}),
+      ...(parsed.resolutionPhotoPaths && parsed.resolutionPhotoPaths.length > 0
+        ? { resolution_photo_paths: parsed.resolutionPhotoPaths }
+        : {}),
     })
     .eq("id", parsed.id);
 

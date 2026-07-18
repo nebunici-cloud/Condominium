@@ -33,11 +33,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-import {
-  maintenanceCategories,
-  maintenanceCategoryLabelKeys,
-} from "@/lib/maintenance-status";
+import { maintenanceCategories, maintenanceCategoryLabelKeys } from "@/lib/maintenance-status";
 import { sanitizeFileName } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/client";
 
@@ -46,21 +42,29 @@ import { createMaintenanceRequest, attachRequestPhotos } from "./actions";
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-type UnitOption = { id: string; label: string };
+type Option = { id: string; label: string };
 
 const schema = z.object({
-  unitId: z.string().uuid(),
+  scope: z.enum(["apartment", "common"]),
+  unitId: z.string().optional(),
+  buildingId: z.string().optional(),
   category: z.enum(["plumbing", "electrical", "heating", "elevator", "common_area", "other"]),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(4000),
 });
 
+// Shared file-a-request dialog. Apartment = a private request for one
+// unit; common area = a public request for a building (visible to its
+// residents). Residents get their own units/buildings; staff get the
+// units/buildings they manage.
 export function NewRequestDialog({
   tenantId,
   units,
+  buildings = [],
 }: {
   tenantId: string;
-  units: UnitOption[];
+  units: Option[];
+  buildings?: Option[];
 }) {
   const t = useTranslations("maintenance");
   const [open, setOpen] = useState(false);
@@ -69,8 +73,13 @@ export function NewRequestDialog({
   const [fileInputKey, setFileInputKey] = useState(0);
   const [fileError, setFileError] = useState<string | null>(null);
 
+  const canApartment = units.length > 0;
+  const canCommon = buildings.length > 0;
+
   const defaultValues = {
+    scope: (canApartment ? "apartment" : "common") as "apartment" | "common",
     unitId: units.length === 1 ? units[0].id : "",
+    buildingId: buildings.length === 1 ? buildings[0].id : "",
     category: "other" as const,
     title: "",
     description: "",
@@ -80,9 +89,18 @@ export function NewRequestDialog({
     resolver: zodResolver(schema),
     defaultValues,
   });
+  const scope = form.watch("scope");
 
   async function onSubmit(values: z.infer<typeof schema>) {
     setFileError(null);
+    if (values.scope === "apartment" && !values.unitId) {
+      form.setError("unitId", { message: t("unitRequired") });
+      return;
+    }
+    if (values.scope === "common" && !values.buildingId) {
+      form.setError("buildingId", { message: t("buildingRequired") });
+      return;
+    }
     if (files.length > MAX_PHOTOS) {
       setFileError(t("photoTooMany", { max: MAX_PHOTOS }));
       return;
@@ -95,7 +113,9 @@ export function NewRequestDialog({
     setSubmitting(true);
     const result = await createMaintenanceRequest({
       tenantId,
-      unitId: values.unitId,
+      scope: values.scope,
+      unitId: values.scope === "apartment" ? values.unitId : undefined,
+      buildingId: values.scope === "common" ? values.buildingId : undefined,
       category: values.category,
       title: values.title,
       description: values.description || undefined,
@@ -107,9 +127,6 @@ export function NewRequestDialog({
       return;
     }
 
-    // Photos go straight from the browser to the private bucket under
-    // the caller's own session -- the storage INSERT policy only
-    // accepts paths inside this request's folder.
     if (files.length > 0) {
       const supabase = createClient();
       const uploaded: string[] = [];
@@ -156,7 +173,33 @@ export function NewRequestDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            {units.length > 1 && (
+            {canApartment && canCommon && (
+              <FormField
+                control={form.control}
+                name="scope"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("scopeLabel")}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="apartment">{t("scopeApartment")}</SelectItem>
+                        <SelectItem value="common">{t("scopeCommon")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {field.value === "common" ? t("scopeCommonHint") : t("scopeApartmentHint")}
+                    </p>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {scope === "apartment" && units.length > 1 && (
               <FormField
                 control={form.control}
                 name="unitId"
@@ -182,6 +225,34 @@ export function NewRequestDialog({
                 )}
               />
             )}
+
+            {scope === "common" && buildings.length > 1 && (
+              <FormField
+                control={form.control}
+                name="buildingId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("buildingLabel")}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t("buildingPlaceholder")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {buildings.map((building) => (
+                          <SelectItem key={building.id} value={building.id}>
+                            {building.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="category"
@@ -249,9 +320,7 @@ export function NewRequestDialog({
                 onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
                 className="text-sm file:mr-3 file:rounded-md file:border file:bg-transparent file:px-3 file:py-1.5 file:text-sm file:font-medium"
               />
-              <p className="text-xs text-muted-foreground">
-                {t("photosHint", { max: MAX_PHOTOS })}
-              </p>
+              <p className="text-xs text-muted-foreground">{t("photosHint", { max: MAX_PHOTOS })}</p>
               {fileError && <p className="text-sm text-destructive">{fileError}</p>}
             </div>
             <DialogFooter>
