@@ -1,15 +1,14 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrlMap } from "@/lib/storage";
-import { formatDate } from "@/lib/period";
-import {
-  maintenanceCategoryLabelKeys,
-  maintenanceStatusBadgeClasses,
-  maintenanceStatusLabelKeys,
-} from "@/lib/maintenance-status";
-import { Badge } from "@/components/ui/badge";
+import { formatDate, formatDateTime } from "@/lib/period";
+import { maintenanceCategoryLabelKeys } from "@/lib/maintenance-status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryIcon } from "@/components/maintenance-category-icon";
+import { MaintenanceStatusTrack } from "@/components/maintenance-status-track";
+import { MaintenanceTimeline, type TimelineEvent } from "@/components/maintenance-timeline";
+import { PhotoGallery } from "@/components/photo-gallery";
 
 import { NewRequestDialog } from "./new-request-dialog";
 import { FollowButton } from "./follow-button";
@@ -25,6 +24,7 @@ type RequestRow = {
   status: string;
   resolution_note: string | null;
   created_at: string;
+  created_by: string | null;
   category: string | null;
   due_date: string | null;
   photo_paths: string[];
@@ -36,6 +36,7 @@ type RequestRow = {
 // ("affects me too") instead of filing duplicates.
 export default async function MyRequestsPage() {
   const t = await getTranslations("maintenance");
+  const locale = await getLocale();
   const supabase = await createClient();
 
   const {
@@ -63,7 +64,7 @@ export default async function MyRequestsPage() {
     supabase
       .from("maintenance_requests")
       .select(
-        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, category, due_date, photo_paths, resolution_photo_paths"
+        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, created_by, category, due_date, photo_paths, resolution_photo_paths"
       )
       .eq("created_by", userId)
       .order("created_at", { ascending: false })
@@ -71,7 +72,7 @@ export default async function MyRequestsPage() {
     supabase
       .from("maintenance_requests")
       .select(
-        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, category, due_date, photo_paths, resolution_photo_paths"
+        "id, tenant_id, unit_id, building_id, visibility, title, description, status, resolution_note, created_at, created_by, category, due_date, photo_paths, resolution_photo_paths"
       )
       .eq("visibility", "public")
       .neq("created_by", userId)
@@ -96,15 +97,49 @@ export default async function MyRequestsPage() {
   const mineRows = (mine ?? []) as RequestRow[];
   const commonRows = (common ?? []) as RequestRow[];
   const allRows = [...mineRows, ...commonRows];
-
-  // Follower counts + which of these I already follow.
   const requestIds = allRows.map((r) => r.id);
-  const { data: followerRows } = requestIds.length
-    ? await supabase
-        .from("maintenance_request_followers")
-        .select("request_id, user_id")
-        .in("request_id", requestIds)
-    : { data: [] };
+
+  // Follower counts + which of these I already follow; the activity
+  // log for every request; reporter names for the common feed.
+  const [{ data: followerRows }, { data: eventRows }, { data: reporterProfiles }] =
+    await Promise.all([
+      requestIds.length
+        ? supabase
+            .from("maintenance_request_followers")
+            .select("request_id, user_id")
+            .in("request_id", requestIds)
+        : Promise.resolve({ data: [] as { request_id: string; user_id: string }[] }),
+      requestIds.length
+        ? supabase
+            .from("maintenance_request_events")
+            .select("request_id, event_type, to_status, created_at")
+            .in("request_id", requestIds)
+            .order("created_at", { ascending: true })
+        : Promise.resolve({
+            data: [] as {
+              request_id: string;
+              event_type: string;
+              to_status: string | null;
+              created_at: string;
+            }[],
+          }),
+      commonRows.length
+        ? supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .in(
+              "id",
+              Array.from(
+                new Set(
+                  commonRows
+                    .map((r) => r.created_by)
+                    .filter((id): id is string => Boolean(id))
+                )
+              )
+            )
+        : Promise.resolve({ data: [] as { id: string; full_name: string | null; email: string | null }[] }),
+    ]);
+
   const followerCount = new Map<string, number>();
   const iFollow = new Set<string>();
   for (const row of followerRows ?? []) {
@@ -112,76 +147,85 @@ export default async function MyRequestsPage() {
     if (row.user_id === userId) iFollow.add(row.request_id);
   }
 
+  const eventsByRequest = new Map<string, TimelineEvent[]>();
+  for (const e of eventRows ?? []) {
+    const list = eventsByRequest.get(e.request_id) ?? [];
+    list.push({ eventType: e.event_type, toStatus: e.to_status, createdAt: e.created_at });
+    eventsByRequest.set(e.request_id, list);
+  }
+
+  const reporterName = new Map(
+    (reporterProfiles ?? []).map((p) => [p.id, p.full_name || p.email || ""])
+  );
+
+  // Rally view: the most-supported common issues float to the top.
+  commonRows.sort(
+    (a, b) =>
+      (followerCount.get(b.id) ?? 0) - (followerCount.get(a.id) ?? 0) ||
+      b.created_at.localeCompare(a.created_at)
+  );
+
   const photoUrls = await getSignedUrlMap(
     supabase,
     "maintenance-photos",
     allRows.flatMap((r) => [...r.photo_paths, ...r.resolution_photo_paths])
   );
 
+  const toGallery = (paths: string[], alt: string) =>
+    paths
+      .map((path) => ({ url: photoUrls.get(path), alt }))
+      .filter((p): p is { url: string; alt: string } => Boolean(p.url));
+
   const renderCard = (request: RequestRow, showFollow: boolean) => {
     const isCommon = request.visibility === "public";
     const affected = followerCount.get(request.id) ?? 0;
+    const isClosed = request.status === "resolved" || request.status === "rejected";
     return (
-      <Card key={request.id}>
+      <Card key={request.id} className={isClosed ? "opacity-75" : undefined}>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <CardTitle className="text-base">{request.title}</CardTitle>
               <CardDescription>
-                {[
-                  isCommon ? t("scopeCommon") : t("scopeApartment"),
-                  t(maintenanceCategoryLabelKeys[request.category ?? "other"]),
-                  formatDate(request.created_at.slice(0, 10)),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                {request.due_date &&
-                  request.status !== "resolved" &&
-                  request.status !== "rejected" && (
-                    <span className="mt-0.5 block font-medium text-foreground">
-                      {t("expectedBy", { date: formatDate(request.due_date) })}
-                    </span>
-                  )}
+                <span className="inline-flex items-center gap-1">
+                  <CategoryIcon category={request.category} />
+                  {[
+                    isCommon ? t("scopeCommon") : t("scopeApartment"),
+                    t(maintenanceCategoryLabelKeys[request.category ?? "other"]),
+                    formatDate(request.created_at.slice(0, 10)),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+                {isCommon && request.created_by && reporterName.get(request.created_by) && (
+                  <span className="mt-0.5 block">
+                    {t("reportedBy", {
+                      name: reporterName.get(request.created_by) as string,
+                      at: formatDateTime(request.created_at, locale),
+                    })}
+                  </span>
+                )}
+                {request.due_date && !isClosed && (
+                  <span className="mt-0.5 block font-medium text-foreground">
+                    {t("expectedBy", { date: formatDate(request.due_date) })}
+                  </span>
+                )}
               </CardDescription>
             </div>
-            <Badge className={maintenanceStatusBadgeClasses[request.status] ?? ""}>
-              {t(maintenanceStatusLabelKeys[request.status] ?? "statusOpen")}
-            </Badge>
+            <MaintenanceStatusTrack status={request.status} />
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2">
+        <CardContent className="flex flex-col gap-3">
           {request.description && (
             <p className="text-sm whitespace-pre-wrap text-muted-foreground">{request.description}</p>
           )}
-          {request.photo_paths.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {request.photo_paths.map((path) => {
-                const url = photoUrls.get(path);
-                if (!url) return null;
-                return (
-                  <a key={path} href={url} target="_blank" rel="noreferrer">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="size-20 rounded-md border object-cover" />
-                  </a>
-                );
-              })}
-            </div>
-          )}
+          <PhotoGallery photos={toGallery(request.photo_paths, t("photoReportedAlt"))} />
           {request.resolution_photo_paths.length > 0 && (
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">{t("resolutionPhotos")}</p>
-              <div className="flex flex-wrap gap-2">
-                {request.resolution_photo_paths.map((path) => {
-                  const url = photoUrls.get(path);
-                  if (!url) return null;
-                  return (
-                    <a key={path} href={url} target="_blank" rel="noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="size-20 rounded-md border object-cover" />
-                    </a>
-                  );
-                })}
-              </div>
+              <PhotoGallery
+                photos={toGallery(request.resolution_photo_paths, t("photoResolutionAlt"))}
+              />
             </div>
           )}
           {request.resolution_note && (
@@ -190,8 +234,9 @@ export default async function MyRequestsPage() {
               {request.resolution_note}
             </p>
           )}
+          <MaintenanceTimeline events={eventsByRequest.get(request.id) ?? []} />
           {isCommon && (
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
               <p className="text-xs text-muted-foreground">
                 {t("affectedHouseholds", { count: affected })}
               </p>

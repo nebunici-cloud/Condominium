@@ -753,7 +753,15 @@
     "eventResolved": "Rezolvat",
     "eventRejected": "Respins",
     "eventReopened": "Redeschis",
-    "eventUpdated": "Actualizat"
+    "eventUpdated": "Actualizat",
+    "photoReportedAlt": "Fotografia problemei raportate",
+    "photoResolutionAlt": "Fotografia reparației finalizate",
+    "allStatuses": "Toate statusurile",
+    "allCategories": "Toate categoriile",
+    "allPriorities": "Toate prioritățile",
+    "allBuildings": "Toate blocurile",
+    "clearFilters": "Resetează filtrele",
+    "noMatches": "Nicio solicitare nu corespunde filtrelor"
   },
   "documents": {
     "title": "Documente",
