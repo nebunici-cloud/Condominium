@@ -753,7 +753,15 @@
     "eventResolved": "Решено",
     "eventRejected": "Отклонено",
     "eventReopened": "Возобновлено",
-    "eventUpdated": "Обновлено"
+    "eventUpdated": "Обновлено",
+    "photoReportedAlt": "Фотография заявленной проблемы",
+    "photoResolutionAlt": "Фотография выполненного ремонта",
+    "allStatuses": "Все статусы",
+    "allCategories": "Все категории",
+    "allPriorities": "Все приоритеты",
+    "allBuildings": "Все дома",
+    "clearFilters": "Сбросить фильтры",
+    "noMatches": "Нет заявок, соответствующих фильтрам"
   },
   "documents": {
     "title": "Документы",

@@ -9,11 +9,14 @@ import {
   maintenancePriorityBadgeClasses,
   maintenancePriorityLabelKeys,
   maintenancePriorityRank,
-  maintenanceStatusBadgeClasses,
-  maintenanceStatusLabelKeys,
 } from "@/lib/maintenance-status";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CategoryIcon } from "@/components/maintenance-category-icon";
+import { MaintenanceStatusTrack } from "@/components/maintenance-status-track";
+import { MaintenanceTimeline, type TimelineEvent } from "@/components/maintenance-timeline";
+import { MaintenanceFilters } from "@/components/maintenance-filters";
+import { PhotoGallery } from "@/components/photo-gallery";
 
 import { TriageActions } from "./triage-actions";
 // Reuses the resident portal's file-a-request dialog. Staff filing on
@@ -21,23 +24,14 @@ import { TriageActions } from "./triage-actions";
 // gives them the UI, scoped to the associations they manage.
 import { NewRequestDialog } from "@/app/[locale]/(portal)/my/requests/new-request-dialog";
 
-// Maps an activity event to its timeline label key.
-function eventLabelKey(eventType: string, toStatus: string | null): string {
-  if (eventType === "created") return "eventCreated";
-  if (eventType === "planned") return "eventPlanned";
-  if (eventType === "status_changed") {
-    return (
-      { in_progress: "eventStarted", resolved: "eventResolved", rejected: "eventRejected", open: "eventReopened" }[
-        toStatus ?? ""
-      ] ?? "eventUpdated"
-    );
-  }
-  return "eventUpdated";
-}
-
-export default async function MaintenancePage() {
+export default async function MaintenancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; category?: string; priority?: string; building?: string }>;
+}) {
   const t = await getTranslations("maintenance");
   const locale = await getLocale();
+  const filters = await searchParams;
   const supabase = await createClient();
 
   const context = await getCurrentCapabilities(supabase);
@@ -87,7 +81,7 @@ export default async function MaintenancePage() {
   const { data: requests } = await supabase
     .from("maintenance_requests")
     .select(
-      "id, title, description, status, resolution_note, created_at, created_by, category, priority, due_date, photo_paths, resolution_photo_paths, visibility, unit_id, building_id, units(unit_number, buildings(name, associations(name))), buildings(name, associations(name))"
+      "id, title, description, status, resolution_note, created_at, created_by, category, priority, due_date, photo_paths, resolution_photo_paths, visibility, unit_id, building_id, units(unit_number, building_id, buildings(name, associations(name))), buildings(name, associations(name))"
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -137,15 +131,48 @@ export default async function MaintenancePage() {
     (requests ?? []).flatMap((r) => [...r.photo_paths, ...r.resolution_photo_paths])
   );
 
+  // Building identity per request (common: its own building; apartment:
+  // the unit's building) -- used by the building filter and its options.
+  const requestBuildingId = (r: NonNullable<typeof requests>[number]) =>
+    r.building_id ?? r.units?.building_id ?? null;
+
+  const buildingOptions = Array.from(
+    new Map(
+      (requests ?? [])
+        .map((r) => {
+          const id = requestBuildingId(r);
+          const building = r.visibility === "public" ? r.buildings : r.units?.buildings;
+          if (!id || !building) return null;
+          return [
+            id,
+            {
+              id,
+              label: [building.associations?.name, building.name].filter(Boolean).join(" · "),
+            },
+          ] as const;
+        })
+        .filter((entry): entry is readonly [string, { id: string; label: string }] => entry !== null)
+    ).values()
+  ).sort((a, b) => a.label.localeCompare(b.label));
+
+  // Apply the URL-driven triage filters.
+  const filtered = (requests ?? []).filter(
+    (r) =>
+      (!filters.status || r.status === filters.status) &&
+      (!filters.category || (r.category ?? "other") === filters.category) &&
+      (!filters.priority || r.priority === filters.priority) &&
+      (!filters.building || requestBuildingId(r) === filters.building)
+  );
+
   const today = new Date().toISOString().slice(0, 10);
-  const active = (requests ?? [])
+  const active = filtered
     .filter((r) => r.status === "open" || r.status === "in_progress")
     .sort(
       (a, b) =>
         (maintenancePriorityRank[a.priority] ?? 9) - (maintenancePriorityRank[b.priority] ?? 9) ||
         a.created_at.localeCompare(b.created_at)
     );
-  const closed = (requests ?? []).filter((r) => r.status === "resolved" || r.status === "rejected");
+  const closed = filtered.filter((r) => r.status === "resolved" || r.status === "rejected");
 
   const renderCards = (rows: typeof active) =>
     rows.map((request) => {
@@ -176,7 +203,8 @@ export default async function MaintenancePage() {
                     {isCommon ? t("scopeCommon") : t("scopeApartment")}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                  <CategoryIcon category={request.category} />
                   {[t(maintenanceCategoryLabelKeys[request.category ?? "other"]), locationLabel]
                     .filter(Boolean)
                     .join(" · ")}
@@ -197,13 +225,11 @@ export default async function MaintenancePage() {
                   )}
                 </p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <div className="flex shrink-0 flex-col items-end gap-2">
                 <Badge className={maintenancePriorityBadgeClasses[request.priority] ?? ""}>
                   {t(maintenancePriorityLabelKeys[request.priority] ?? "priorityNormal")}
                 </Badge>
-                <Badge className={maintenanceStatusBadgeClasses[request.status] ?? ""}>
-                  {t(maintenanceStatusLabelKeys[request.status] ?? "statusOpen")}
-                </Badge>
+                <MaintenanceStatusTrack status={request.status} />
               </div>
             </div>
           </CardHeader>
@@ -211,35 +237,21 @@ export default async function MaintenancePage() {
             {request.description && (
               <p className="text-sm whitespace-pre-wrap text-muted-foreground">{request.description}</p>
             )}
-            {request.photo_paths.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {request.photo_paths.map((path) => {
-                  const url = photoUrls.get(path);
-                  if (!url) return null;
-                  return (
-                    <a key={path} href={url} target="_blank" rel="noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="size-16 rounded-md border object-cover" />
-                    </a>
-                  );
-                })}
-              </div>
-            )}
+            <PhotoGallery
+              photos={request.photo_paths
+                .map((path) => ({ url: photoUrls.get(path), alt: t("photoReportedAlt") }))
+                .filter((p): p is { url: string; alt: string } => Boolean(p.url))}
+              thumbClassName="size-16 rounded-md border object-cover"
+            />
             {request.resolution_photo_paths.length > 0 && (
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">{t("resolutionPhotos")}</p>
-                <div className="flex flex-wrap gap-2">
-                  {request.resolution_photo_paths.map((path) => {
-                    const url = photoUrls.get(path);
-                    if (!url) return null;
-                    return (
-                      <a key={path} href={url} target="_blank" rel="noreferrer">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt="" className="size-16 rounded-md border object-cover" />
-                      </a>
-                    );
-                  })}
-                </div>
+                <PhotoGallery
+                  photos={request.resolution_photo_paths
+                    .map((path) => ({ url: photoUrls.get(path), alt: t("photoResolutionAlt") }))
+                    .filter((p): p is { url: string; alt: string } => Boolean(p.url))}
+                  thumbClassName="size-16 rounded-md border object-cover"
+                />
               </div>
             )}
             {request.resolution_note && (
@@ -249,22 +261,16 @@ export default async function MaintenancePage() {
               </p>
             )}
 
-            {timeline.length > 0 && (
-              <ol className="flex flex-col gap-1 border-l pl-4 text-xs text-muted-foreground">
-                {timeline.map((event, i) => (
-                  <li key={i} className="relative">
-                    <span className="absolute -left-[1.05rem] top-1 size-1.5 rounded-full bg-muted-foreground/50" />
-                    <span className="font-medium text-foreground">
-                      {t(eventLabelKey(event.event_type, event.to_status))}
-                    </span>{" "}
-                    {event.actor_user_id && nameById.get(event.actor_user_id) && (
-                      <>— {nameById.get(event.actor_user_id)} </>
-                    )}
-                    · {formatDateTime(event.created_at, locale)}
-                  </li>
-                ))}
-              </ol>
-            )}
+            <MaintenanceTimeline
+              events={timeline.map(
+                (event): TimelineEvent => ({
+                  eventType: event.event_type,
+                  toStatus: event.to_status,
+                  actorName: event.actor_user_id ? nameById.get(event.actor_user_id) : null,
+                  createdAt: event.created_at,
+                })
+              )}
+            />
 
             {canManage && (
               <div className="border-t pt-3">
@@ -296,27 +302,37 @@ export default async function MaintenancePage() {
       {(requests ?? []).length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
-        <div className="flex flex-col gap-8">
-          <section>
-            <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-              {t("activeSection", { count: active.length })}
-            </h2>
-            {active.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("noActive")}</p>
-            ) : (
-              <div className="flex flex-col gap-4">{renderCards(active)}</div>
-            )}
-          </section>
+        <>
+          <div className="mb-6">
+            <MaintenanceFilters buildings={buildingOptions} />
+          </div>
 
-          {closed.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-                {t("closedSection", { count: closed.length })}
-              </h2>
-              <div className="flex flex-col gap-4">{renderCards(closed)}</div>
-            </section>
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noMatches")}</p>
+          ) : (
+            <div className="flex flex-col gap-8">
+              <section>
+                <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+                  {t("activeSection", { count: active.length })}
+                </h2>
+                {active.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("noActive")}</p>
+                ) : (
+                  <div className="flex flex-col gap-4">{renderCards(active)}</div>
+                )}
+              </section>
+
+              {closed.length > 0 && (
+                <section>
+                  <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+                    {t("closedSection", { count: closed.length })}
+                  </h2>
+                  <div className="flex flex-col gap-4">{renderCards(closed)}</div>
+                </section>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </main>
   );

@@ -55,3 +55,25 @@ export const maintenancePriorityRank: Record<string, number> = {
   normal: 2,
   low: 3,
 };
+
+// The happy-path progression a request moves through. "rejected" is a
+// terminal off-ramp, rendered separately by the status track.
+export const maintenanceStatusSteps = ["open", "in_progress", "resolved"] as const;
+
+// Maps an activity-log event to its timeline i18n label key (in the
+// maintenance namespace). Shared by the admin and portal timelines.
+export function eventLabelKey(eventType: string, toStatus: string | null): string {
+  if (eventType === "created") return "eventCreated";
+  if (eventType === "planned") return "eventPlanned";
+  if (eventType === "status_changed") {
+    return (
+      {
+        in_progress: "eventStarted",
+        resolved: "eventResolved",
+        rejected: "eventRejected",
+        open: "eventReopened",
+      }[toStatus ?? ""] ?? "eventUpdated"
+    );
+  }
+  return "eventUpdated";
+}
