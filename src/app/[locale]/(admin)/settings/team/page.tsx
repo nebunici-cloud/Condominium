@@ -17,7 +17,7 @@ import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button
 
 import { InviteUserDialog } from "./invite-user-dialog";
 import { MemberRolesEditor } from "./member-roles-editor";
-import { revokeInvite } from "./actions";
+import { removeMember, revokeInvite } from "./actions";
 
 export default async function RolesPage() {
   const t = await getTranslations("roles");
@@ -153,13 +153,27 @@ export default async function RolesPage() {
                       </div>
                     </TableCell>
                     {canManageRoles && (
-                      <TableCell className="text-right">
-                        <MemberRolesEditor
-                          tenantId={tenantId}
-                          userId={member.id}
-                          roles={roleOptions}
-                          assignedRoleIds={member.roleIds}
-                        />
+                      <TableCell>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <MemberRolesEditor
+                            tenantId={tenantId}
+                            userId={member.id}
+                            roles={roleOptions}
+                            assignedRoleIds={member.roleIds}
+                          />
+                          {member.id !== user.id && (
+                            <EndEffectiveDatedButton
+                              id={member.id}
+                              action={removeMember}
+                              triggerLabel={t("removeMember")}
+                              confirmTitle={t("removeMember")}
+                              confirmDescription={t("removeMemberConfirm", { name: member.label })}
+                              successMessage={t("removeMemberSuccess")}
+                              cancelLabel={tCommon("cancel")}
+                              confirmLabel={tCommon("confirm")}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
