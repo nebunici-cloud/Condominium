@@ -8,7 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 const toggleSchema = z.object({
   roleId: z.string().uuid(),
   capabilityCode: z.string().trim().min(1),
-  associationId: z.string().uuid(),
+  // null = an organization-wide grant (association_id null); the
+  // unique constraint is nulls-not-distinct, so upsert covers both.
+  associationId: z.string().uuid().nullable(),
   tenantId: z.string().uuid(),
   grant: z.boolean(),
 });
@@ -29,12 +31,16 @@ export async function toggleAssociationCapability(input: z.infer<typeof toggleSc
     );
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase
+    let query = supabase
       .from("role_capabilities")
       .delete()
       .eq("role_id", parsed.roleId)
-      .eq("capability_code", parsed.capabilityCode)
-      .eq("association_id", parsed.associationId);
+      .eq("capability_code", parsed.capabilityCode);
+    query =
+      parsed.associationId === null
+        ? query.is("association_id", null)
+        : query.eq("association_id", parsed.associationId);
+    const { error } = await query;
     if (error) return { error: error.message };
   }
 

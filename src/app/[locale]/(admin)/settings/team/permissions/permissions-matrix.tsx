@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { capabilityLabelKey } from "@/lib/permission-groups";
 
-import { toggleAssociationCapability } from "../actions";
+import { toggleAssociationCapability } from "./actions";
 
 type MatrixRow = { code: string; grantedRoleIds: string[] };
 type MatrixGroup = { group: string; rows: MatrixRow[] };
@@ -24,7 +24,8 @@ export function PermissionsMatrix({
   groups,
 }: {
   tenantId: string;
-  associationId: string;
+  // null = the organization-wide grants (association_id null).
+  associationId: string | null;
   roles: RoleColumn[];
   groups: MatrixGroup[];
 }) {

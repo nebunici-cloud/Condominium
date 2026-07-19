@@ -22,6 +22,16 @@ export const ASSOCIATION_SCOPED_CAPABILITY_GROUPS: { group: string; codes: strin
   { group: "documents", codes: ["docs.document.manage"] },
 ];
 
+// Organization-wide capabilities (is_association_scoped = false):
+// granted once per role for the whole tenant, edited in the org-wide
+// matrix on the permissions landing page.
+export const TENANT_WIDE_CAPABILITY_GROUPS: { group: string; codes: string[] }[] = [
+  { group: "organization", codes: ["core.tenant.manage", "core.role.manage", "core.user.invite", "core.association.create"] },
+  { group: "ownersDirectory", codes: ["core.owner.view", "core.owner.create", "core.owner.update", "core.owner.delete"] },
+  { group: "occupantsDirectory", codes: ["core.occupant.view", "core.occupant.create", "core.occupant.update"] },
+  { group: "audit", codes: ["core.audit.view"] },
+];
+
 export function capabilityLabelKey(code: string): string {
   return code.replace(/\./g, "_");
 }
