@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserCapabilities } from "@/lib/capabilities";
 import { Link } from "@/i18n/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,27 +50,6 @@ export default async function RolesPage() {
 
   function roleLabel(role: { code: string; name: string }) {
     return t.has(role.code) ? t(role.code) : role.name;
-  }
-
-  // Only tenant-wide grants (association_id is null) show here --
-  // association-scoped capabilities now vary per association and are
-  // edited from within each association's own Permissions page.
-  const roleIds = (roles ?? []).map((role) => role.id);
-  const { data: tenantWideGrants } = roleIds.length
-    ? await supabase
-        .from("role_capabilities")
-        .select("role_id, capabilities(code, description)")
-        .in("role_id", roleIds)
-        .is("association_id", null)
-    : { data: [] };
-
-  const capabilitiesByRole = new Map<string, { code: string; description: string }[]>();
-  for (const row of tenantWideGrants ?? []) {
-    const capability = row.capabilities;
-    if (!capability) continue;
-    const list = capabilitiesByRole.get(row.role_id) ?? [];
-    list.push(capability);
-    capabilitiesByRole.set(row.role_id, list);
   }
 
   const { data: tenantUserRows } = await supabase
@@ -143,43 +121,7 @@ export default async function RolesPage() {
         )}
       </div>
 
-      <p className="mb-4 text-sm text-muted-foreground">{t("associationScopedHint")}</p>
-
-      {!roles || roles.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("noCapabilities")}</p>
-      ) : (
-        <div className="grid gap-4">
-          {roles.map((role) => {
-            const roleCapabilities = capabilitiesByRole.get(role.id) ?? [];
-
-            return (
-              <Card key={role.id}>
-                <CardHeader>
-                  <CardTitle>{roleLabel(role)}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    {t("capabilities")} ({roleCapabilities.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {roleCapabilities.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    ) : (
-                      roleCapabilities.map((capability) => (
-                        <Badge key={capability.code} variant="outline" title={capability.description}>
-                          {capability.code}
-                        </Badge>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      <section className="mt-10">
+      <section>
         <h2 className="mb-4 text-lg font-medium">{t("teamTitle")}</h2>
         {members.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noMembers")}</p>

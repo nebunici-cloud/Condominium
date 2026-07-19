@@ -6,7 +6,7 @@ import { getCurrentCapabilities } from "@/lib/capabilities";
 import { ASSOCIATION_SCOPED_CAPABILITY_GROUPS } from "@/lib/permission-groups";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
-import { PermissionsMatrix } from "./permissions-matrix";
+import { PermissionsMatrix } from "../permissions-matrix";
 
 // Column order: staff roles first, resident roles last.
 const ROLE_CODES = [
