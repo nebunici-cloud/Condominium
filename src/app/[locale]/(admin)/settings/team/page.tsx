@@ -17,6 +17,7 @@ import {
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 
 import { InviteUserDialog } from "./invite-user-dialog";
+import { MemberRolesEditor } from "./member-roles-editor";
 import { revokeInvite } from "./actions";
 
 export default async function RolesPage() {
@@ -41,6 +42,7 @@ export default async function RolesPage() {
   const tenantId = membership.tenant_id;
   const capabilities = await getUserCapabilities(supabase, tenantId, user.id);
   const canInvite = capabilities.includes("core.user.invite");
+  const canManageRoles = capabilities.includes("core.role.manage");
 
   const { data: roles } = await supabase
     .from("roles")
@@ -85,26 +87,33 @@ export default async function RolesPage() {
     memberIds.length
       ? supabase
           .from("user_roles")
-          .select("user_id, roles(code, name)")
+          .select("user_id, role_id, roles(code, name)")
           .eq("tenant_id", tenantId)
           .in("user_id", memberIds)
       : Promise.resolve({ data: [] }),
   ]);
 
   const memberRoleLabels = new Map<string, string[]>();
+  const memberRoleIds = new Map<string, string[]>();
   for (const row of memberRoleRows ?? []) {
     const role = row.roles;
     if (!role) continue;
     const labels = memberRoleLabels.get(row.user_id) ?? [];
     labels.push(roleLabel(role));
     memberRoleLabels.set(row.user_id, labels);
+    const ids = memberRoleIds.get(row.user_id) ?? [];
+    ids.push(row.role_id);
+    memberRoleIds.set(row.user_id, ids);
   }
 
   const members = (memberProfiles ?? []).map((profile) => ({
     id: profile.id,
     label: profile.full_name || profile.email || profile.id,
     roleLabels: memberRoleLabels.get(profile.id) ?? [],
+    roleIds: memberRoleIds.get(profile.id) ?? [],
   }));
+
+  const roleOptions = (roles ?? []).map((role) => ({ id: role.id, label: roleLabel(role) }));
 
   const { data: pendingInviteRows } = canInvite
     ? await supabase
@@ -181,6 +190,7 @@ export default async function RolesPage() {
                 <TableRow>
                   <TableHead>{t("memberLabel")}</TableHead>
                   <TableHead>{t("memberRolesLabel")}</TableHead>
+                  {canManageRoles && <TableHead />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,6 +210,16 @@ export default async function RolesPage() {
                         )}
                       </div>
                     </TableCell>
+                    {canManageRoles && (
+                      <TableCell className="text-right">
+                        <MemberRolesEditor
+                          tenantId={tenantId}
+                          userId={member.id}
+                          roles={roleOptions}
+                          assignedRoleIds={member.roleIds}
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

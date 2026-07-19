@@ -13,10 +13,13 @@ export const ASSOCIATION_SCOPED_CAPABILITY_GROUPS: { group: string; codes: strin
   { group: "config", codes: ["core.config.manage"] },
   { group: "feeType", codes: ["finance.fee_type.create", "finance.fee_type.view", "finance.fee_type.update"] },
   { group: "allocationRule", codes: ["finance.allocation_rule.manage"] },
-  { group: "invoice", codes: ["finance.invoice.generate", "finance.invoice.publish", "finance.invoice.view"] },
+  { group: "invoice", codes: ["finance.invoice.generate", "finance.invoice.publish", "finance.invoice.view", "finance.invoice.cancel"] },
   { group: "payment", codes: ["finance.payment.record", "finance.payment.view"] },
   { group: "openingBalance", codes: ["finance.opening_balance.import"] },
   { group: "meterReading", codes: ["finance.meter_reading.record", "finance.meter_reading.view"] },
+  { group: "comms", codes: ["comms.announcement.manage"] },
+  { group: "maintenance", codes: ["maintenance.request.manage"] },
+  { group: "documents", codes: ["docs.document.manage"] },
 ];
 
 export function capabilityLabelKey(code: string): string {

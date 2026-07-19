@@ -280,7 +280,9 @@
     "inviteError": "Не удалось отправить приглашение.",
     "revoke": "Отменить приглашение",
     "revokeConfirm": "Точно отменить это приглашение?",
-    "revokeSuccess": "Приглашение отменено."
+    "revokeSuccess": "Приглашение отменено.",
+    "editRoles": "Изменить роли",
+    "cannotRemoveOwnManagerRole": "Нельзя удалить у себя роль, дающую право управлять ролями."
   },
   "audit": {
     "title": "Журнал действий",
@@ -371,7 +373,15 @@
     "finance_payment_view": "Просмотр платежей",
     "finance_opening_balance_import": "Импорт начальных остатков",
     "finance_meter_reading_record": "Регистрация показаний счётчика",
-    "finance_meter_reading_view": "Просмотр показаний счётчика"
+    "finance_meter_reading_view": "Просмотр показаний счётчика",
+    "actionColumn": "Разрешение",
+    "group_comms": "Объявления",
+    "group_maintenance": "Обслуживание",
+    "group_documents": "Документы",
+    "comms_announcement_manage": "Создание и управление объявлениями",
+    "finance_invoice_cancel": "Аннулирование счетов",
+    "maintenance_request_manage": "Управление заявками на обслуживание",
+    "docs_document_manage": "Управление документами ассоциации"
   },
   "openingBalances": {
     "title": "Начальные остатки",
