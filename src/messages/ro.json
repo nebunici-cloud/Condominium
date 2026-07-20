@@ -282,7 +282,10 @@
     "revokeConfirm": "Sigur anulezi această invitație?",
     "revokeSuccess": "Invitația a fost anulată.",
     "editRoles": "Editează rolurile",
-    "cannotRemoveOwnManagerRole": "Nu vă puteți retrage propriul rol care permite administrarea rolurilor."
+    "cannotRemoveOwnManagerRole": "Nu vă puteți retrage propriul rol care permite administrarea rolurilor.",
+    "removeMember": "Elimină accesul",
+    "removeMemberConfirm": "Sigur eliminați accesul pentru {name}? Rolurile și apartenența la organizație vor fi retrase.",
+    "removeMemberSuccess": "Acces eliminat"
   },
   "audit": {
     "title": "Jurnal de activitate",

@@ -22,7 +22,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 revoke insert, update, delete on public.audit_log from authenticated;
 
-select plan(57);
+select plan(63);
 
 -- === Fixtures (as table-owning role, bypassing RLS) ===============
 
@@ -594,6 +594,58 @@ select is(
   (select count(*) from public.notifications),
   0::bigint,
   'a member with no unit and no requests sees no notifications, including others'
+);
+
+-- === Removing a member (tenant_users delete policy) ================
+-- Kept last: it deletes memberships, which would disturb earlier
+-- assertions. Owner-a (no core.role.manage) cannot remove anyone;
+-- admin-a can remove others but not themselves.
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$delete from public.tenant_users
+    where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+      and user_id = '33333333-3333-3333-3333-333333333333'$$,
+  'a member without core.role.manage deleting a membership is a no-op (RLS filters the row)'
+);
+
+select is(
+  (select count(*) from public.tenant_users where user_id = '33333333-3333-3333-3333-333333333333'),
+  1::bigint,
+  'the targeted member is still a member'
+);
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$delete from public.tenant_users
+    where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+      and user_id = '11111111-1111-1111-1111-111111111111'$$,
+  'a role manager cannot remove themselves (self-guard makes it a no-op)'
+);
+
+select is(
+  (select count(*) from public.tenant_users where user_id = '11111111-1111-1111-1111-111111111111'),
+  1::bigint,
+  'the caller is still a member after attempting self-removal'
+);
+
+select lives_ok(
+  $$delete from public.tenant_users
+    where tenant_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+      and user_id = '33333333-3333-3333-3333-333333333333'$$,
+  'a role manager can remove another member'
+);
+
+select is(
+  (select count(*) from public.tenant_users where user_id = '33333333-3333-3333-3333-333333333333'),
+  0::bigint,
+  'the removed member is no longer a member'
 );
 
 select * from finish();

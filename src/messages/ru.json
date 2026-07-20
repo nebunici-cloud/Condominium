@@ -282,7 +282,10 @@
     "revokeConfirm": "Точно отменить это приглашение?",
     "revokeSuccess": "Приглашение отменено.",
     "editRoles": "Изменить роли",
-    "cannotRemoveOwnManagerRole": "Нельзя удалить у себя роль, дающую право управлять ролями."
+    "cannotRemoveOwnManagerRole": "Нельзя удалить у себя роль, дающую право управлять ролями.",
+    "removeMember": "Убрать доступ",
+    "removeMemberConfirm": "Убрать доступ для {name}? Роли и членство в организации будут отозваны.",
+    "removeMemberSuccess": "Доступ убран"
   },
   "audit": {
     "title": "Журнал действий",

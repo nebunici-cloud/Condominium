@@ -129,6 +129,57 @@ export async function setMemberRole(input: z.infer<typeof memberRoleSchema> & { 
   return { error: null };
 }
 
+// Remove a member's access entirely: drop all their roles, then their
+// tenant membership (is_tenant_member then returns false, so RLS denies
+// everything). Authorization is the user_roles/tenant_users delete RLS
+// (core.role.manage). You cannot remove yourself.
+export async function removeMember(userId: string) {
+  z.string().uuid().parse(userId);
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+  if (userId === user.id) {
+    // Sentinel the client maps to a translated message.
+    return { error: "cannot_remove_self" };
+  }
+
+  const { data: membership } = await supabase
+    .from("tenant_users")
+    .select("tenant_id")
+    .limit(1)
+    .maybeSingle();
+  if (!membership) {
+    return { error: "Not authenticated" };
+  }
+  const tenantId = membership.tenant_id;
+
+  const { error: rolesError } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId);
+  if (rolesError) {
+    return { error: rolesError.message };
+  }
+
+  const { error } = await supabase
+    .from("tenant_users")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId);
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}
+
 export async function revokeInvite(id: string) {
   const supabase = await createClient();
 
