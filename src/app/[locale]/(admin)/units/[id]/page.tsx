@@ -17,10 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { EndEffectiveDatedButton } from "@/components/end-effective-dated-button";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { OwnerAccessCell, type OwnerAccessStatus } from "@/components/owner-access";
 
 import { NewOwnershipDialog } from "./new-ownership-dialog";
 import { NewOccupancyDialog } from "./new-occupancy-dialog";
 import { AddOwnerAsOccupantButton } from "./add-owner-as-occupant-button";
+import { EditShareDialog } from "./edit-share-dialog";
 import { endOwnership, endOccupancy } from "./actions";
 import { RecordPaymentDialog } from "./record-payment-dialog";
 import { MatchPaymentButton } from "./match-payment-button";
@@ -35,6 +37,7 @@ export default async function UnitDetailPage({
   const { id } = await params;
   const t = await getTranslations("units");
   const tOwnerships = await getTranslations("ownerships");
+  const tOwners = await getTranslations("owners");
   const tOccupancies = await getTranslations("occupancies");
   const tPayments = await getTranslations("payments");
   const tInvoices = await getTranslations("invoices");
@@ -77,7 +80,9 @@ export default async function UnitDetailPage({
   ] = await Promise.all([
       supabase
         .from("ownerships")
-        .select("id, share_percent, effective_from, effective_to, owners(id, full_name)")
+        .select(
+          "id, share_percent, effective_from, effective_to, owners(id, full_name, email, phone, user_id)"
+        )
         .eq("unit_id", id)
         .order("effective_from", { ascending: false }),
       supabase
@@ -145,6 +150,25 @@ export default async function UnitDetailPage({
     .filter((o) => !o.effective_to)
     .reduce((sum, o) => sum + o.share_percent, 0);
   const currentShareSumRounded = Math.round(currentShareSum * 1000) / 1000;
+
+  // Platform-access status per owner. Pending invites are only
+  // readable with core.user.invite; without it, show nothing rather
+  // than guessing.
+  const canInvite = capabilities.includes("core.user.invite");
+  const { data: pendingInviteRows } = canInvite
+    ? await supabase.from("tenant_invites").select("email").is("accepted_at", null)
+    : { data: [] as { email: string }[] };
+  const pendingEmails = new Set((pendingInviteRows ?? []).map((row) => row.email.toLowerCase()));
+
+  const accessStatus = (owner: {
+    email: string | null;
+    user_id: string | null;
+  }): OwnerAccessStatus => {
+    if (owner.user_id) return "active";
+    if (!owner.email?.trim()) return "no_email";
+    if (!canInvite) return "unknown";
+    return pendingEmails.has(owner.email.trim().toLowerCase()) ? "invited" : "not_invited";
+  };
 
   const currentOccupantOwnerIds = new Set(
     (occupancies ?? [])
@@ -228,6 +252,7 @@ export default async function UnitDetailPage({
                   <TableHead>{tOwnerships("ownerLabel")}</TableHead>
                   <TableHead>{tOwnerships("sharePercentLabel")}</TableHead>
                   <TableHead>{tCommon("status")}</TableHead>
+                  <TableHead>{tOwners("accessColumn")}</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -238,12 +263,42 @@ export default async function UnitDetailPage({
                   const ownerAlreadyLivesHere = owner && currentOccupantOwnerIds.has(owner.id);
                   return (
                     <TableRow key={ownership.id}>
-                      <TableCell className="font-medium">{owner?.full_name ?? "—"}</TableCell>
-                      <TableCell>{ownership.share_percent}%</TableCell>
+                      <TableCell>
+                        <p className="font-medium">{owner?.full_name ?? "—"}</p>
+                        {(owner?.email || owner?.phone) && (
+                          <p className="text-xs text-muted-foreground">
+                            {[owner?.email, owner?.phone].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1">
+                          {ownership.share_percent}%
+                          {isCurrent && owner && capabilities.includes("core.ownership.update") && (
+                            <EditShareDialog
+                              ownershipId={ownership.id}
+                              ownerName={owner.full_name}
+                              sharePercent={ownership.share_percent}
+                            />
+                          )}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={isCurrent ? "default" : "secondary"}>
                           {isCurrent ? tOwnerships("current") : tOwnerships("historical")}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {isCurrent && owner ? (
+                          <OwnerAccessCell
+                            ownerId={owner.id}
+                            email={owner.email}
+                            status={accessStatus(owner)}
+                            canInvite={canInvite}
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">

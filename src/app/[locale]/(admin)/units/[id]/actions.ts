@@ -76,6 +76,32 @@ export async function createOwnerAndOwnership(
   return { error: null };
 }
 
+const updateShareSchema = z.object({
+  ownershipId: z.string().uuid(),
+  sharePercent: z.number().min(0.001).max(100),
+});
+
+// Correct a current ownership's share in place -- e.g. after a buy-out
+// the remaining owner goes from 50% to 100%. Authorization is the
+// ownerships update RLS (core.ownership.update). Real transfers still
+// use end + add, keeping the effective-dated history honest.
+export async function updateOwnershipShare(input: z.infer<typeof updateShareSchema>) {
+  const parsed = updateShareSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("ownerships")
+    .update({ share_percent: parsed.sharePercent })
+    .eq("id", parsed.ownershipId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}
+
 export async function endOwnership(ownershipId: string) {
   const supabase = await createClient();
 

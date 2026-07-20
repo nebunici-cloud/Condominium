@@ -208,7 +208,19 @@
     "errorUnitNotFound": "Niciun apartament cu acest număr în acest bloc",
     "errorMissingSharePercent": "Cota deținută lipsește",
     "errorInvalidNumber": "Valoare numerică invalidă",
-    "errorInvalidDate": "Dată invalidă"
+    "errorInvalidDate": "Dată invalidă",
+    "unitsColumn": "Apartamente",
+    "accessColumn": "Acces platformă",
+    "accessActive": "Cont activ",
+    "accessInvited": "Invitație trimisă",
+    "accessNotInvited": "Neinvitat",
+    "accessNoEmail": "Fără e-mail",
+    "inviteAction": "Invită",
+    "reinviteAction": "Retrimite",
+    "inviteSentTitle": "Invitație creată",
+    "inviteSentHint": "Trimiteți-i acest link. Se conectează cu adresa {email} și contul se leagă automat de apartamentele sale.",
+    "copyLink": "Copiază",
+    "linkCopied": "Copiat"
   },
   "ownerships": {
     "title": "Proprietăți asupra apartamentului",
@@ -232,7 +244,10 @@
     "selectExisting": "Alege un proprietar existent",
     "createNewOwner": "Proprietar nou",
     "ownerLivesHere": "Locuiește aici",
-    "ownerLivesHereSuccess": "Proprietarul a fost adăugat și ca ocupant al apartamentului."
+    "ownerLivesHereSuccess": "Proprietarul a fost adăugat și ca ocupant al apartamentului.",
+    "editShare": "Modifică cota",
+    "shareInvalid": "Cota trebuie să fie între 0 și 100",
+    "shareUpdateSuccess": "Cota a fost actualizată"
   },
   "occupancies": {
     "title": "Locatari",

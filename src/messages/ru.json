@@ -208,7 +208,19 @@
     "errorUnitNotFound": "В этом доме нет квартиры с таким номером",
     "errorMissingSharePercent": "Отсутствует доля собственности",
     "errorInvalidNumber": "Некорректное числовое значение",
-    "errorInvalidDate": "Некорректная дата"
+    "errorInvalidDate": "Некорректная дата",
+    "unitsColumn": "Квартиры",
+    "accessColumn": "Доступ к платформе",
+    "accessActive": "Аккаунт активен",
+    "accessInvited": "Приглашение отправлено",
+    "accessNotInvited": "Не приглашён",
+    "accessNoEmail": "Нет e-mail",
+    "inviteAction": "Пригласить",
+    "reinviteAction": "Отправить снова",
+    "inviteSentTitle": "Приглашение создано",
+    "inviteSentHint": "Отправьте эту ссылку. Вход выполняется с адресом {email}, аккаунт автоматически связывается с квартирами.",
+    "copyLink": "Копировать",
+    "linkCopied": "Скопировано"
   },
   "ownerships": {
     "title": "Право собственности на квартиру",
@@ -232,7 +244,10 @@
     "selectExisting": "Выбрать существующего собственника",
     "createNewOwner": "Новый собственник",
     "ownerLivesHere": "Живёт здесь",
-    "ownerLivesHereSuccess": "Собственник также добавлен как жилец квартиры."
+    "ownerLivesHereSuccess": "Собственник также добавлен как жилец квартиры.",
+    "editShare": "Изменить долю",
+    "shareInvalid": "Доля должна быть от 0 до 100",
+    "shareUpdateSuccess": "Доля обновлена"
   },
   "occupancies": {
     "title": "Жильцы",
